@@ -380,6 +380,55 @@ input:focus, select:focus {
     color: var(--white);
 }
 
+/* Autocomplete */
+.autocomplete {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+}
+
+.autocomplete-items {
+    position: absolute;
+    border: 1px solid var(--light-border);
+    border-bottom: none;
+    border-top: none;
+    z-index: 99;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: 250px;
+    overflow-y: auto;
+    border-radius: 0 0 8px 8px;
+    box-shadow: var(--shadow-md);
+}
+
+.autocomplete-items div {
+    padding: 12px;
+    cursor: pointer;
+    background-color: var(--white);
+    border-bottom: 1px solid var(--light-border);
+    font-size: 14px;
+}
+
+.autocomplete-items div:hover {
+    background-color: var(--primary-light);
+}
+
+.autocomplete-active {
+    background-color: var(--primary-light) !important;
+}
+
+/* Utility Classes */
+.hidden {
+    display: none !important;
+}
+
+.readonly-input {
+    background-color: #f1f5f9 !important;
+    color: var(--gray);
+}
+
+
 /* Table */
 .table-responsive {
     overflow-x: auto;

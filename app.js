@@ -25,7 +25,7 @@ const db = getFirestore(app);
 const formatCurrency = (number) => new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(number);
 
 // 초기 상품 데이터 (DB 초기화용)
-const initialProducts = [
+const rawProducts = [
   { id: 'p1', brand: "K2 세이프티", name: "K2 세이프티 쿨 바라클라바 (블랙)", color: "블랙", size: "FREE", stock: 5, buyPrice: 9500, sellPrice: 12000 },
   { id: 'p2', brand: "K2 세이프티", name: "K2 세이프티 베이직 쿨토시", color: "화이트", size: "FREE", stock: 10, buyPrice: 3700, sellPrice: 4700 },
   { id: 'p3', brand: "K2 세이프티", name: "K2 세이프티 베이직 쿨토시", color: "블랙", size: "FREE", stock: 10, buyPrice: 3700, sellPrice: 4700 },
@@ -50,6 +50,7 @@ const initialProducts = [
   { id: 'p22', brand: "K2 세이프티", name: "K2 세이프티 타공 멀티스카프 (이어홀)", color: "블랙", size: "FREE", stock: 5, buyPrice: 8930, sellPrice: 11300 },
   { id: 'p23', brand: "K2 세이프티", name: "K2 세이프티 타공 멀티스카프 (이어홀)", color: "블루", size: "FREE", stock: 5, buyPrice: 8930, sellPrice: 11300 }
 ];
+const initialProducts = rawProducts.map(p => ({ supplier: "최가유통", ...p }));
 
 // App State 관리
 let products = [];
@@ -100,7 +101,6 @@ async function initFirebase() {
             newProducts.sort((a, b) => a.id.localeCompare(b.id, undefined, {numeric: true, sensitivity: 'base'}));
             products = newProducts;
             
-            populateSelect();
             renderTable();
             updateDashboard();
         });
@@ -108,25 +108,6 @@ async function initFirebase() {
     } catch (e) {
         console.error("Firebase 초기화 에러:", e);
         alert("Firebase DB에 접근할 수 없습니다. 콘솔의 Firestore 권한(Rules)이 열려 있는지 확인하세요.");
-    }
-}
-
-// Select 박스 업데이트 (기존 선택 값 유지)
-function populateSelect() {
-    const select = document.getElementById('productSelect');
-    const currentVal = select.value;
-    select.innerHTML = '<option value="">상품을 선택하세요</option>';
-    
-    products.forEach(p => {
-        const option = document.createElement('option');
-        option.value = p.id;
-        option.textContent = `[${p.brand}] ${p.name} - ${p.color} (${p.size}) [재고:${p.stock}]`;
-        select.appendChild(option);
-    });
-    
-    // 다시 그릴 때 기존에 선택 중이던 것 복구
-    if(products.find(p => p.id === currentVal)) {
-        select.value = currentVal;
     }
 }
 
@@ -140,15 +121,18 @@ function renderTable(searchTerm = '') {
         filtered = products.filter(p => 
             p.name.includes(searchTerm) || 
             p.color.includes(searchTerm) ||
-            p.brand.includes(searchTerm)
+            p.brand.includes(searchTerm) ||
+            (p.supplier && p.supplier.includes(searchTerm))
         );
     }
     
     filtered.forEach(p => {
         const tr = document.createElement('tr');
         const badgeClass = p.stock <= 2 ? 'stock-badge low' : 'stock-badge';
+        const sp = p.supplier || '최가유통'; // 구버전 데이터 대응
         
         tr.innerHTML = `
+            <td>${sp}</td>
             <td>${p.brand}</td>
             <td>${p.name}</td>
             <td>${p.color}</td>
@@ -170,103 +154,254 @@ function updateDashboard() {
     document.getElementById('totalCost').textContent = formatCurrency(totalCost);
 }
 
-// 트랜잭션 타입 토글시 단가 힌트 및 단가 자동변경
-document.querySelectorAll('input[name="txType"]').forEach(radio => {
-    radio.addEventListener('change', (e) => {
-        const hint = document.getElementById('priceHint');
-        const select = document.getElementById('productSelect');
-        const selectedId = select.value;
-        const product = products.find(p => p.id === selectedId);
+// ==========================================
+// 입출고 폼 토글 로직
+// ==========================================
+const formFields = ['fSupplier', 'fBrand', 'fName', 'fColor', 'fSize'];
+const outSearchContainer = document.getElementById('outboundSearchContainer');
 
-        if (e.target.value === 'IN') {
-            hint.textContent = '매입 단가 기준 (재고 증가)';
-            if(product) document.getElementById('txPrice').value = product.buyPrice;
-        } else {
-            hint.textContent = '매출 단가 기준 (재고 차감)';
-            if(product) document.getElementById('txPrice').value = product.sellPrice;
+function toggleFormMode(type) {
+    const hint = document.getElementById('priceHint');
+    if (type === 'IN') {
+        hint.textContent = '매입 단가 기준';
+        outSearchContainer.classList.add('hidden');
+        document.getElementById('outSearchInput').value = '';
+        formFields.forEach(id => {
+            const el = document.getElementById(id);
+            el.readOnly = false;
+            el.classList.remove('readonly-input');
+        });
+        document.getElementById('selectedProductId').value = '';
+        document.getElementById('transactionForm').reset();
+        document.getElementById('typeIn').checked = true;
+    } else {
+        hint.textContent = '매출 단가 기준 (재고 차감)';
+        outSearchContainer.classList.remove('hidden');
+        formFields.forEach(id => {
+            const el = document.getElementById(id);
+            el.readOnly = true;
+            el.classList.add('readonly-input');
+        });
+        // OUT으로 전환 시 기존 폼 비우기
+        document.getElementById('transactionForm').reset();
+        document.getElementById('typeOut').checked = true;
+    }
+}
+
+document.querySelectorAll('input[name="txType"]').forEach(radio => {
+    radio.addEventListener('change', (e) => toggleFormMode(e.target.value));
+});
+
+// ==========================================
+// 출고용 연관검색(Autocomplete) 기능
+// ==========================================
+const searchInput = document.getElementById('outSearchInput');
+let currentFocus;
+
+searchInput.addEventListener("input", function(e) {
+    let a, b, val = this.value;
+    closeAllLists();
+    if (!val) { return false; }
+    currentFocus = -1;
+    
+    a = document.createElement("DIV");
+    a.setAttribute("id", this.id + "autocomplete-list");
+    a.setAttribute("class", "autocomplete-items");
+    this.parentNode.appendChild(a);
+    
+    const searchTerms = val.toLowerCase().split(' ');
+    
+    products.forEach(p => {
+        const searchText = `${p.supplier || '최가유통'} ${p.brand} ${p.name} ${p.color} ${p.size}`.toLowerCase();
+        const matchesAll = searchTerms.every(term => searchText.includes(term));
+        
+        if (matchesAll) {
+            b = document.createElement("DIV");
+            b.innerHTML = `[${p.supplier || '최가유통'}] [${p.brand}] ${p.name} - ${p.color} (${p.size}) <strong>재고:${p.stock}</strong>`;
+            b.innerHTML += "<input type='hidden' value='" + p.id + "'>";
+            b.addEventListener("click", function(e) {
+                const selectedId = this.getElementsByTagName("input")[0].value;
+                const sp = products.find(x => x.id === selectedId);
+                if (sp) {
+                    searchInput.value = `[${sp.brand}] ${sp.name}`;
+                    document.getElementById('selectedProductId').value = sp.id;
+                    document.getElementById('fSupplier').value = sp.supplier || '최가유통';
+                    document.getElementById('fBrand').value = sp.brand;
+                    document.getElementById('fName').value = sp.name;
+                    document.getElementById('fColor').value = sp.color;
+                    document.getElementById('fSize').value = sp.size;
+                    document.getElementById('txPrice').value = sp.sellPrice;
+                }
+                closeAllLists();
+            });
+            a.appendChild(b);
         }
     });
 });
 
-// 상품 선택시 단가 자동 입력
-document.getElementById('productSelect').addEventListener('change', (e) => {
-    const productId = e.target.value;
-    const type = document.querySelector('input[name="txType"]:checked').value;
-    const product = products.find(p => p.id === productId);
-    
-    if (product) {
-        document.getElementById('txPrice').value = type === 'IN' ? product.buyPrice : product.sellPrice;
-    } else {
-        document.getElementById('txPrice').value = '';
+searchInput.addEventListener("keydown", function(e) {
+    let x = document.getElementById(this.id + "autocomplete-list");
+    if (x) x = x.getElementsByTagName("div");
+    if (e.keyCode == 40) { // down
+        currentFocus++;
+        addActive(x);
+    } else if (e.keyCode == 38) { // up
+        currentFocus--;
+        addActive(x);
+    } else if (e.keyCode == 13) { // enter
+        e.preventDefault();
+        if (currentFocus > -1) {
+            if (x) x[currentFocus].click();
+        }
     }
 });
 
-// 폼 서밋 핸들러 (Firebase 트랜잭션 사용)
+function addActive(x) {
+    if (!x) return false;
+    removeActive(x);
+    if (currentFocus >= x.length) currentFocus = 0;
+    if (currentFocus < 0) currentFocus = (x.length - 1);
+    x[currentFocus].classList.add("autocomplete-active");
+}
+function removeActive(x) {
+    for (let i = 0; i < x.length; i++) {
+        x[i].classList.remove("autocomplete-active");
+    }
+}
+function closeAllLists(elmnt) {
+    var x = document.getElementsByClassName("autocomplete-items");
+    for (var i = 0; i < x.length; i++) {
+        if (elmnt != x[i] && elmnt != searchInput) {
+            x[i].parentNode.removeChild(x[i]);
+        }
+    }
+}
+document.addEventListener("click", function (e) {
+    closeAllLists(e.target);
+});
+
+
+// ==========================================
+// 폼 서밋 핸들러 (Firebase DB 연동)
+// ==========================================
 document.getElementById('transactionForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
-    const productId = document.getElementById('productSelect').value;
     const qty = parseInt(document.getElementById('txQty').value, 10);
     const price = parseInt(document.getElementById('txPrice').value, 10);
     const type = document.querySelector('input[name="txType"]:checked').value;
     const submitBtn = e.target.querySelector('button[type="submit"]');
     
-    if (!productId || isNaN(qty) || isNaN(price)) {
-        alert('모든 필드값을 올바르게 입력해주세요.');
+    if (isNaN(qty) || isNaN(price)) {
+        alert('수량과 단가를 올바르게 입력해주세요.');
         return;
     }
-    
+
+    const fSupplier = document.getElementById('fSupplier').value.trim();
+    const fBrand = document.getElementById('fBrand').value.trim();
+    const fName = document.getElementById('fName').value.trim();
+    const fColor = document.getElementById('fColor').value.trim();
+    const fSize = document.getElementById('fSize').value.trim();
+
+    if (!fSupplier || !fBrand || !fName || !fColor || !fSize) {
+        alert('모든 상품 정보를 입력해주세요.');
+        return;
+    }
+
     const originalBtnHTML = submitBtn.innerHTML;
     submitBtn.disabled = true;
     submitBtn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> 처리중...";
     
     try {
         await runTransaction(db, async (transaction) => {
-            const prodRef = doc(db, 'kng_products', productId);
             const metricsRef = doc(db, 'kng_data', 'metrics');
-            
-            const prodSnap = await transaction.get(prodRef);
             const metricsSnap = await transaction.get(metricsRef);
-            
-            if (!prodSnap.exists() || !metricsSnap.exists()) {
-                throw "데이터를 찾을 수 없습니다.";
-            }
-            
-            const prodData = prodSnap.data();
+            if (!metricsSnap.exists()) throw "데이터를 찾을 수 없습니다.";
             const metricsData = metricsSnap.data();
-            
-            if (type === 'OUT' && prodData.stock < qty) {
-                throw "현재 재고보다 많은 수량을 출고할 수 없습니다.";
+
+            let targetProductId;
+            let currentStock = 0;
+            let productName = fName;
+
+            if (type === 'OUT') {
+                targetProductId = document.getElementById('selectedProductId').value;
+                if (!targetProductId) throw "출고할 상품을 검색하여 선택해주세요.";
+                
+                const prodRef = doc(db, 'kng_products', targetProductId);
+                const prodSnap = await transaction.get(prodRef);
+                if (!prodSnap.exists()) throw "상품이 존재하지 않습니다.";
+                const prodData = prodSnap.data();
+                
+                if (prodData.stock < qty) throw "현재 재고보다 많은 수량을 출고할 수 없습니다.";
+                
+                currentStock = prodData.stock - qty;
+                productName = prodData.name;
+
+                transaction.update(prodRef, { 
+                    stock: currentStock,
+                    sellPrice: price 
+                });
+                
+                transaction.update(metricsRef, { 
+                    totalRevenue: metricsData.totalRevenue + (qty * price)
+                });
+            } else if (type === 'IN') {
+                const existingProduct = products.find(p => 
+                    (p.supplier || '최가유통') === fSupplier && 
+                    p.brand === fBrand && 
+                    p.name === fName && 
+                    p.color === fColor && 
+                    p.size === fSize
+                );
+
+                if (existingProduct) {
+                    targetProductId = existingProduct.id;
+                    const prodRef = doc(db, 'kng_products', targetProductId);
+                    currentStock = existingProduct.stock + qty;
+                    transaction.update(prodRef, { 
+                        stock: currentStock,
+                        buyPrice: price 
+                    });
+                } else {
+                    targetProductId = 'p_' + Date.now();
+                    const prodRef = doc(db, 'kng_products', targetProductId);
+                    currentStock = qty;
+                    transaction.set(prodRef, {
+                        id: targetProductId,
+                        supplier: fSupplier,
+                        brand: fBrand,
+                        name: fName,
+                        color: fColor,
+                        size: fSize,
+                        stock: qty,
+                        buyPrice: price,
+                        sellPrice: 0 
+                    });
+                }
+
+                transaction.update(metricsRef, { 
+                    totalCost: metricsData.totalCost + (qty * price)
+                });
             }
-            
-            const newStock = type === 'IN' ? prodData.stock + qty : prodData.stock - qty;
-            const revenueChange = type === 'OUT' ? qty * price : 0;
-            const costChange = type === 'IN' ? qty * price : 0;
-            
-            transaction.update(prodRef, { stock: newStock });
-            transaction.update(metricsRef, { 
-                totalRevenue: metricsData.totalRevenue + revenueChange,
-                totalCost: metricsData.totalCost + costChange
-            });
             
             // 기록 보존용 로그 남기기
             const txLogRef = doc(collection(db, 'kng_transactions'));
             transaction.set(txLogRef, {
-                productId,
-                productName: prodData.name,
-                type,
-                qty,
-                price,
+                productId: targetProductId,
+                productName: productName,
+                supplier: fSupplier,
+                type: type,
+                qty: qty,
+                price: price,
                 timestamp: new Date().toISOString()
             });
         });
         
         // 폼 리셋
-        document.getElementById('transactionForm').reset();
-        document.getElementById('txPrice').value = '';
+        toggleFormMode('IN'); // 기본 상태로 돌아가기
         
     } catch (error) {
-        alert("입출고 등록 실패: " + error);
+        alert("등록 실패: " + error);
         console.error(error);
     } finally {
         submitBtn.disabled = false;
@@ -274,7 +409,7 @@ document.getElementById('transactionForm').addEventListener('submit', async (e) 
     }
 });
 
-// 검색 기능
+// 검색 기능 (데스크탑 목록 검색용)
 document.getElementById('searchInput').addEventListener('input', (e) => {
     renderTable(e.target.value);
 });

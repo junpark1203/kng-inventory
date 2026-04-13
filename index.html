@@ -80,14 +80,44 @@
                             <label for="typeOut" class="btn-toggle">출고 (OUT)</label>
                         </div>
                     </div>
-                    <form id="transactionForm" class="grid-form">
-                        <div class="form-group">
-                            <label for="productSelect">상품명 (컬러/사이즈)</label>
-                            <select id="productSelect" required>
-                                <option value="">상품을 선택하세요</option>
-                                <!-- JS Populated -->
-                            </select>
+                    <form id="transactionForm" class="grid-form" autocomplete="off">
+                        <!-- OUTBOUND 전용 검색 래퍼 (입고 시에는 숨김 처리) -->
+                        <div class="form-group hidden" id="outboundSearchContainer">
+                            <label for="outSearchInput">출고 상품 검색</label>
+                            <div class="autocomplete">
+                                <input type="text" id="outSearchInput" placeholder="바코드 또는 상품명, 분류 입력하여 검색...">
+                            </div>
                         </div>
+
+                        <!-- 품목 기본 정보 (IN: 자유 입력 / OUT: 읽기 전용) -->
+                        <div class="form-group row-group">
+                            <div class="half">
+                                <label for="fSupplier">공급사</label>
+                                <input type="text" id="fSupplier" required placeholder="예: 최가유통">
+                            </div>
+                            <div class="half">
+                                <label for="fBrand">브랜드명</label>
+                                <input type="text" id="fBrand" required placeholder="예: K2 세이프티">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="fName">상품명</label>
+                            <input type="text" id="fName" required placeholder="예: 쿨토시">
+                        </div>
+
+                        <div class="form-group row-group">
+                            <div class="half">
+                                <label for="fColor">컬러</label>
+                                <input type="text" id="fColor" required placeholder="블랙">
+                            </div>
+                            <div class="half">
+                                <label for="fSize">사이즈</label>
+                                <input type="text" id="fSize" required placeholder="FREE">
+                            </div>
+                        </div>
+
+                        <!-- 수량 및 가격 -->
                         <div class="form-group row-group">
                             <div class="half">
                                 <label for="txQty">수량</label>
@@ -99,6 +129,9 @@
                                 <small id="priceHint" class="hint">매입 단가 기준</small>
                             </div>
                         </div>
+
+                        <input type="hidden" id="selectedProductId">
+
                         <button type="submit" class="btn-primary">
                             <i class='bx bx-plus-circle'></i> 내역 등록
                         </button>
@@ -117,6 +150,7 @@
                         <table class="modern-table">
                             <thead>
                                 <tr>
+                                    <th>공급사</th>
                                     <th>브랜드</th>
                                     <th>상품명</th>
                                     <th>컬러</th>
