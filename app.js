@@ -283,14 +283,125 @@ function setTodayDate() {
 }
 
 // ==========================================
-// 출고용 연관검색(Autocomplete) 기능
+// 공통 검색(Autocomplete) 기능
+// ==========================================
+let currentFocus = -1;
+
+function addActive(x) {
+    if (!x) return false;
+    removeActive(x);
+    if (currentFocus >= x.length) currentFocus = 0;
+    if (currentFocus < 0) currentFocus = (x.length - 1);
+    x[currentFocus].classList.add("autocomplete-active");
+}
+
+function removeActive(x) {
+    for (let i = 0; i < x.length; i++) {
+        x[i].classList.remove("autocomplete-active");
+    }
+}
+
+function closeAllLists(elmnt, currentInputObj) {
+    var x = document.getElementsByClassName("autocomplete-items");
+    for (var i = 0; i < x.length; i++) {
+        if (elmnt != x[i] && elmnt != currentInputObj) {
+            x[i].parentNode.removeChild(x[i]);
+        }
+    }
+}
+
+document.addEventListener("click", function (e) {
+    closeAllLists(e.target);
+});
+
+// 공용 스마트 자동완성 (단일 필드용: 클릭 시 전체 목록 조회, 타이핑 시 필터링)
+function attachGenericAutocomplete(inputId, fieldKey) {
+    const inputEl = document.getElementById(inputId);
+    if (!inputEl) return;
+    
+    function showItems(val) {
+        closeAllLists(null, inputEl);
+        currentFocus = -1;
+        
+        let a = document.createElement("DIV");
+        a.setAttribute("id", inputEl.id + "autocomplete-list");
+        a.setAttribute("class", "autocomplete-items");
+        inputEl.parentNode.appendChild(a);
+        
+        // 해당 필드에서 중복 없는 고유 값 추출
+        const uniqueValues = [...new Set(products.map(p => {
+            if (fieldKey === 'supplier') return p.supplier || '최가유통';
+            return p[fieldKey];
+        }).filter(Boolean))];
+        
+        const searchTerms = (val || '').toLowerCase().split(' ');
+        let count = 0;
+        
+        uniqueValues.forEach(itemVal => {
+            const searchText = itemVal.toLowerCase();
+            const matchesAll = !val || searchTerms.every(term => searchText.includes(term));
+            
+            if (matchesAll) {
+                count++;
+                let b = document.createElement("DIV");
+                b.innerHTML = itemVal;
+                b.innerHTML += "<input type='hidden' value='" + itemVal + "'>";
+                b.addEventListener("click", function(e) {
+                    inputEl.value = this.getElementsByTagName("input")[0].value;
+                    closeAllLists();
+                });
+                a.appendChild(b);
+            }
+        });
+        
+        if (count === 0) a.parentNode.removeChild(a);
+    }
+
+    inputEl.addEventListener("input", function(e) {
+        showItems(this.value);
+    });
+    
+    inputEl.addEventListener("focus", function(e) {
+        // 읽기 전용 상태(출고 모드)일 경우 드롭다운을 띄우지 않음
+        if(this.readOnly) return; 
+        if (!document.getElementById(this.id + "autocomplete-list")) {
+            showItems(this.value);
+        }
+    });
+
+    inputEl.addEventListener("keydown", function(e) {
+        let x = document.getElementById(this.id + "autocomplete-list");
+        if (x) x = x.getElementsByTagName("div");
+        if (e.keyCode == 40) { // down
+            currentFocus++;
+            addActive(x);
+        } else if (e.keyCode == 38) { // up
+            currentFocus--;
+            addActive(x);
+        } else if (e.keyCode == 13) { // enter
+            e.preventDefault();
+            if (currentFocus > -1) {
+                if (x) x[currentFocus].click();
+            }
+        }
+    });
+}
+
+// 각 입력 필드에 스마트 자동완성 바인딩
+attachGenericAutocomplete('fSupplier', 'supplier');
+attachGenericAutocomplete('fBrand', 'brand');
+attachGenericAutocomplete('fName', 'name');
+attachGenericAutocomplete('fColor', 'color');
+attachGenericAutocomplete('fSize', 'size');
+
+// ==========================================
+// 출고용 연관검색(전체 복합 검색용) 
 // ==========================================
 const searchInput = document.getElementById('outSearchInput');
-let currentFocus;
 
 searchInput.addEventListener("input", function(e) {
     let a, b, val = this.value;
-    closeAllLists();
+    closeAllLists(null, this);
     if (!val) { return false; }
     currentFocus = -1;
     
@@ -344,30 +455,6 @@ searchInput.addEventListener("keydown", function(e) {
             if (x) x[currentFocus].click();
         }
     }
-});
-
-function addActive(x) {
-    if (!x) return false;
-    removeActive(x);
-    if (currentFocus >= x.length) currentFocus = 0;
-    if (currentFocus < 0) currentFocus = (x.length - 1);
-    x[currentFocus].classList.add("autocomplete-active");
-}
-function removeActive(x) {
-    for (let i = 0; i < x.length; i++) {
-        x[i].classList.remove("autocomplete-active");
-    }
-}
-function closeAllLists(elmnt) {
-    var x = document.getElementsByClassName("autocomplete-items");
-    for (var i = 0; i < x.length; i++) {
-        if (elmnt != x[i] && elmnt != searchInput) {
-            x[i].parentNode.removeChild(x[i]);
-        }
-    }
-}
-document.addEventListener("click", function (e) {
-    closeAllLists(e.target);
 });
 
 
