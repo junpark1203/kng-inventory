@@ -1,11 +1,11 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-analytics.js";
 import { 
-    getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, 
-    onSnapshot, addDoc, runTransaction, writeBatch 
+    getFirestore, collection, doc, getDoc, setDoc, updateDoc, 
+    onSnapshot, runTransaction, writeBatch, query 
 } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
 
-// Firebase 설정 (사용자 제공)
+// Firebase 설정
 const firebaseConfig = {
     apiKey: "AIzaSyDqdzlXTddvoBYWaVbTM7_ERO_rUGWjIgE",
     authDomain: "kng-inventory.firebaseapp.com",
@@ -16,15 +16,14 @@ const firebaseConfig = {
     measurementId: "G-5VYMDB59XD"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const db = getFirestore(app);
 
-// 유틸리티 포맷팅 함수
+// 유틸리티 함수
 const formatCurrency = (number) => new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(number);
 
-// 초기 상품 데이터 (DB 초기화용)
+// 초기 상품
 const rawProducts = [
   { id: 'p1', brand: "K2 세이프티", name: "K2 세이프티 쿨 바라클라바 (블랙)", color: "블랙", size: "FREE", stock: 5, buyPrice: 9500, sellPrice: 12000 },
   { id: 'p2', brand: "K2 세이프티", name: "K2 세이프티 베이직 쿨토시", color: "화이트", size: "FREE", stock: 10, buyPrice: 3700, sellPrice: 4700 },
@@ -54,13 +53,14 @@ const initialProducts = rawProducts.map(p => ({ supplier: "최가유통", ...p }
 
 // App State 관리
 let products = [];
+let transactions = [];
 let totalRevenue = 0; 
 let totalCost = 0; 
+let editingRowId = null;
 
-// 초기화 함수
+// 초기화
 async function initFirebase() {
     try {
-        // 1. 데이터베이스 초기화 체크 (최초 접속시 데이터 구성)
         const metricsRef = doc(db, 'kng_data', 'metrics');
         const metricsSnap = await getDoc(metricsRef);
         
@@ -72,15 +72,14 @@ async function initFirebase() {
             batch.set(metricsRef, { totalRevenue: 0, totalCost: initialCost });
             
             initialProducts.forEach(p => {
-                const pRef = doc(db, 'kng_products', p.id);
-                batch.set(pRef, p);
+                batch.set(doc(db, 'kng_products', p.id), p);
             });
             
             await batch.commit();
             console.log("DB 초기 세팅 완료!");
         }
 
-        // 2. 실시간 매출/매입 수치 구독
+        // 실시간 수치 구독
         onSnapshot(metricsRef, (docSnap) => {
             if(docSnap.exists()) {
                 const data = docSnap.data();
@@ -90,28 +89,72 @@ async function initFirebase() {
             }
         });
 
-        // 3. 실시간 제품 재고 구독
+        // 실시간 제품 구독
         onSnapshot(collection(db, 'kng_products'), (snapshot) => {
             const newProducts = [];
-            snapshot.forEach((docSnap) => {
-                newProducts.push(docSnap.data());
-            });
-            
-            // ID 오름차순으로 항상 테이블 정렬 고정
+            snapshot.forEach((docSnap) => newProducts.push(docSnap.data()));
             newProducts.sort((a, b) => a.id.localeCompare(b.id, undefined, {numeric: true, sensitivity: 'base'}));
             products = newProducts;
-            
             renderTable();
             updateDashboard();
+        });
+
+        // 실시간 트랜잭션 (입출고 내역) 구독
+        onSnapshot(query(collection(db, 'kng_transactions')), (snapshot) => {
+            const newTx = [];
+            snapshot.forEach((docSnap) => newTx.push({ id: docSnap.id, ...docSnap.data() }));
+            // 내림차순 정렬 (최신이 위로)
+            newTx.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            transactions = newTx;
+            renderTransactionsTable();
         });
         
     } catch (e) {
         console.error("Firebase 초기화 에러:", e);
-        alert("Firebase DB에 접근할 수 없습니다. 콘솔의 Firestore 권한(Rules)이 열려 있는지 확인하세요.");
+        alert("DB 연동에 실패했습니다. (Firestore 권한 확인)");
     }
 }
 
+// ==========================================
+// 인라인 수정 스크립트 노출
+// ==========================================
+window.toggleEdit = function(id) {
+    editingRowId = id;
+    renderTable(); 
+}
+
+window.cancelEdit = function() {
+    editingRowId = null;
+    renderTable();
+}
+
+window.saveEdit = async function(id) {
+    const btn = document.getElementById(`btn-save-${id}`);
+    btn.innerHTML = '저장 중...';
+    btn.disabled = true;
+
+    try {
+        const prodRef = doc(db, 'kng_products', id);
+        await updateDoc(prodRef, {
+            supplier: document.getElementById(`edit-sp-${id}`).value,
+            brand: document.getElementById(`edit-br-${id}`).value,
+            name: document.getElementById(`edit-nm-${id}`).value,
+            color: document.getElementById(`edit-cl-${id}`).value,
+            size: document.getElementById(`edit-sz-${id}`).value,
+            buyPrice: parseInt(document.getElementById(`edit-bp-${id}`).value, 10),
+            sellPrice: parseInt(document.getElementById(`edit-spc-${id}`).value, 10),
+            stock: parseInt(document.getElementById(`edit-st-${id}`).value, 10)
+        });
+        editingRowId = null;
+    } catch(e) {
+        alert('수정 실패: ' + e);
+    }
+    // No need to re-render, onSnapshot will fire automatically
+}
+
+// ==========================================
 // 테이블 렌더링
+// ==========================================
 function renderTable(searchTerm = '') {
     const tbody = document.getElementById('inventoryTableBody');
     tbody.innerHTML = '';
@@ -128,25 +171,63 @@ function renderTable(searchTerm = '') {
     
     filtered.forEach(p => {
         const tr = document.createElement('tr');
-        const badgeClass = p.stock <= 2 ? 'stock-badge low' : 'stock-badge';
-        const sp = p.supplier || '최가유통'; // 구버전 데이터 대응
+        const sp = p.supplier || '최가유통';
+        
+        if (editingRowId === p.id) {
+            tr.innerHTML = `
+                <td><input type="text" class="inline-input" id="edit-sp-${p.id}" value="${sp}"></td>
+                <td><input type="text" class="inline-input" id="edit-br-${p.id}" value="${p.brand}"></td>
+                <td><input type="text" class="inline-input" id="edit-nm-${p.id}" value="${p.name}"></td>
+                <td><input type="text" class="inline-input" id="edit-cl-${p.id}" value="${p.color}"></td>
+                <td><input type="text" class="inline-input" id="edit-sz-${p.id}" value="${p.size}"></td>
+                <td><input type="number" class="inline-input" id="edit-bp-${p.id}" value="${p.buyPrice}"></td>
+                <td><input type="number" class="inline-input" id="edit-spc-${p.id}" value="${p.sellPrice}"></td>
+                <td><input type="number" class="inline-input" id="edit-st-${p.id}" value="${p.stock}"></td>
+                <td style="display:flex;gap:4px;">
+                    <button class="btn-action save" id="btn-save-${p.id}" onclick="saveEdit('${p.id}')">저장</button>
+                    <button class="btn-action" onclick="cancelEdit()">취소</button>
+                </td>
+            `;
+        } else {
+            const badgeClass = p.stock <= 2 ? 'stock-badge low' : 'stock-badge';
+            tr.innerHTML = `
+                <td>${sp}</td>
+                <td>${p.brand}</td>
+                <td>${p.name}</td>
+                <td>${p.color}</td>
+                <td>${p.size}</td>
+                <td>${formatCurrency(p.buyPrice)}</td>
+                <td>${formatCurrency(p.sellPrice)}</td>
+                <td><span class="${badgeClass}">${p.stock}</span></td>
+                <td><button class="btn-action" onclick="toggleEdit('${p.id}')"><i class='bx bx-edit-alt'></i> 수정</button></td>
+            `;
+        }
+        tbody.appendChild(tr);
+    });
+}
+
+function renderTransactionsTable() {
+    const tbody = document.getElementById('transactionTableBody');
+    tbody.innerHTML = '';
+    
+    transactions.forEach(t => {
+        const tr = document.createElement('tr');
+        const badgeClass = t.type === 'IN' ? 'stock-badge' : 'stock-badge low';
+        const typeLabel = t.type === 'IN' ? '매입' : '출고';
         
         tr.innerHTML = `
-            <td>${sp}</td>
-            <td>${p.brand}</td>
-            <td>${p.name}</td>
-            <td>${p.color}</td>
-            <td>${p.size}</td>
-            <td>${formatCurrency(p.buyPrice)}</td>
-            <td>${formatCurrency(p.sellPrice)}</td>
-            <td><span class="${badgeClass}">${p.stock}</span></td>
-            <td>${formatCurrency(p.stock * p.buyPrice)}</td>
+            <td>${t.txDate || t.timestamp.split('T')[0]}</td>
+            <td><span class="${badgeClass}">${typeLabel}</span></td>
+            <td>${t.supplier || '-'}</td>
+            <td>${t.productName || '-'}</td>
+            <td>${t.qty}</td>
+            <td>${formatCurrency(t.price)}</td>
+            <td>${t.remarks || ''}</td>
         `;
         tbody.appendChild(tr);
     });
 }
 
-// 대시보드 위젯 업데이트
 function updateDashboard() {
     const totalQty = products.reduce((sum, p) => sum + p.stock, 0);
     document.getElementById('totalStockCount').textContent = totalQty.toLocaleString();
@@ -174,6 +255,7 @@ function toggleFormMode(type) {
         document.getElementById('selectedProductId').value = '';
         document.getElementById('transactionForm').reset();
         document.getElementById('typeIn').checked = true;
+        setTodayDate();
     } else {
         hint.textContent = '매출 단가 기준 (재고 차감)';
         outSearchContainer.classList.remove('hidden');
@@ -182,15 +264,19 @@ function toggleFormMode(type) {
             el.readOnly = true;
             el.classList.add('readonly-input');
         });
-        // OUT으로 전환 시 기존 폼 비우기
         document.getElementById('transactionForm').reset();
         document.getElementById('typeOut').checked = true;
+        setTodayDate();
     }
 }
 
 document.querySelectorAll('input[name="txType"]').forEach(radio => {
     radio.addEventListener('change', (e) => toggleFormMode(e.target.value));
 });
+
+function setTodayDate() {
+    document.getElementById('txDate').value = new Date().toISOString().split('T')[0];
+}
 
 // ==========================================
 // 출고용 연관검색(Autocomplete) 기능
@@ -282,18 +368,20 @@ document.addEventListener("click", function (e) {
 
 
 // ==========================================
-// 폼 서밋 핸들러 (Firebase DB 연동)
+// 폼 서밋 핸들러
 // ==========================================
 document.getElementById('transactionForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
     const qty = parseInt(document.getElementById('txQty').value, 10);
     const price = parseInt(document.getElementById('txPrice').value, 10);
+    const txDate = document.getElementById('txDate').value;
+    const remarks = document.getElementById('txRemarks').value.trim();
     const type = document.querySelector('input[name="txType"]:checked').value;
     const submitBtn = e.target.querySelector('button[type="submit"]');
     
-    if (isNaN(qty) || isNaN(price)) {
-        alert('수량과 단가를 올바르게 입력해주세요.');
+    if (isNaN(qty) || isNaN(price) || !txDate) {
+        alert('필수 입력값을 확인해주세요.');
         return;
     }
 
@@ -384,7 +472,6 @@ document.getElementById('transactionForm').addEventListener('submit', async (e) 
                 });
             }
             
-            // 기록 보존용 로그 남기기
             const txLogRef = doc(collection(db, 'kng_transactions'));
             transaction.set(txLogRef, {
                 productId: targetProductId,
@@ -393,12 +480,13 @@ document.getElementById('transactionForm').addEventListener('submit', async (e) 
                 type: type,
                 qty: qty,
                 price: price,
+                txDate: txDate,
+                remarks: remarks,
                 timestamp: new Date().toISOString()
             });
         });
         
-        // 폼 리셋
-        toggleFormMode('IN'); // 기본 상태로 돌아가기
+        toggleFormMode(type); // 폼 초기화
         
     } catch (error) {
         alert("등록 실패: " + error);
@@ -407,6 +495,62 @@ document.getElementById('transactionForm').addEventListener('submit', async (e) 
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalBtnHTML;
     }
+});
+
+// ==========================================
+// 엑셀(CSV) 다운로드 함수 모음
+// ==========================================
+function downloadCSV(data, filename) {
+    if(!data || data.length === 0) return alert('내보낼 데이터가 없습니다.');
+    const csvRows = [];
+    const headers = Object.keys(data[0]);
+    csvRows.push(headers.join(','));
+    
+    for (const row of data) {
+        const values = headers.map(header => {
+            const val = ('' + (row[header] || '')).replace(/"/g, '""');
+            return `"${val}"`;
+        });
+        csvRows.push(values.join(','));
+    }
+    
+    const blob = new Blob(["\uFEFF" + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.setAttribute('hidden', '');
+    a.setAttribute('href', url);
+    a.setAttribute('download', filename);
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+
+document.getElementById('exportInventoryBtn').addEventListener('click', () => {
+    const data = products.map(p => ({
+        "공급사": p.supplier || "최가유통",
+        "브랜드": p.brand,
+        "상품명": p.name,
+        "컬러": p.color,
+        "사이즈": p.size,
+        "매입단가": p.buyPrice,
+        "매출단가": p.sellPrice,
+        "현재재고": p.stock,
+        "재고금액(매입가)": p.stock * p.buyPrice
+    }));
+    downloadCSV(data, `재고현황_${new Date().toISOString().slice(0,10)}.csv`);
+});
+
+document.getElementById('exportTransactionsBtn').addEventListener('click', () => {
+    const data = transactions.map(t => ({
+        "일자": t.txDate || t.timestamp.split('T')[0],
+        "구분": t.type === 'IN' ? '매입(입고)' : '매출(출고)',
+        "공급사": t.supplier || '-',
+        "상품명/내역": t.productName || '-',
+        "수량": t.qty,
+        "단가": t.price,
+        "비고": t.remarks || ''
+    }));
+    downloadCSV(data, `입출고내역_${new Date().toISOString().slice(0,10)}.csv`);
 });
 
 // 검색 기능 (데스크탑 목록 검색용)
@@ -443,4 +587,7 @@ document.getElementById('resetDataBtn').addEventListener('click', async () => {
 });
 
 // 앱 시작
-document.addEventListener('DOMContentLoaded', initFirebase);
+document.addEventListener('DOMContentLoaded', () => {
+    setTodayDate();
+    initFirebase();
+});

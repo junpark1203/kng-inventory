@@ -255,6 +255,11 @@ body {
     font-weight: 600;
 }
 
+.header-actions {
+    display: flex;
+    gap: 10px;
+}
+
 /* Toggle Buttons */
 .toggle-group {
     display: flex;
@@ -378,6 +383,60 @@ input:focus, select:focus {
 .btn-danger:hover {
     background: var(--danger);
     color: var(--white);
+}
+
+.btn-success {
+    background: var(--success);
+    color: var(--white);
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: var(--transition);
+}
+
+.btn-success:hover {
+    background: #059669;
+}
+
+/* Inline Edit */
+.inline-input {
+    width: 100%;
+    min-width: 60px;
+    padding: 4px 8px;
+    border: 1px solid var(--primary);
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.btn-action {
+    background: none;
+    border: none;
+    color: var(--primary);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: var(--transition);
+    white-space: nowrap;
+}
+
+.btn-action:hover {
+    background: var(--primary-light);
+}
+
+.btn-action.save {
+    color: var(--success);
+}
+
+.btn-action.save:hover {
+    background: var(--success-light);
 }
 
 /* Autocomplete */

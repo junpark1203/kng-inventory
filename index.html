@@ -130,6 +130,18 @@
                             </div>
                         </div>
 
+                        <!-- 부가 정보 -->
+                        <div class="form-group row-group">
+                            <div class="half">
+                                <label for="txDate">일일 (Date)</label>
+                                <input type="date" id="txDate" required>
+                            </div>
+                            <div class="half">
+                                <label for="txRemarks">비고</label>
+                                <input type="text" id="txRemarks" placeholder="특이사항, 메모 등 자유 입력">
+                            </div>
+                        </div>
+
                         <input type="hidden" id="selectedProductId">
 
                         <button type="submit" class="btn-primary">
@@ -144,7 +156,10 @@
                 <div class="card">
                     <div class="card-header">
                         <h3>실시간 재고 현황</h3>
-                        <button id="resetDataBtn" class="btn-danger"><i class='bx bx-reset'></i> 데이터 초기화</button>
+                        <div class="header-actions">
+                            <button id="exportInventoryBtn" class="btn-success"><i class='bx bx-table'></i> 엑셀 다운로드</button>
+                            <button id="resetDataBtn" class="btn-danger"><i class='bx bx-reset'></i> 데이터 초기화</button>
+                        </div>
                     </div>
                     <div class="table-responsive">
                         <table class="modern-table">
@@ -158,10 +173,40 @@
                                     <th>매입 단가</th>
                                     <th>매출 단가</th>
                                     <th>현재 재고</th>
-                                    <th>재고 금액(매입가)</th>
+                                    <th>관리</th>
                                 </tr>
                             </thead>
                             <tbody id="inventoryTableBody">
+                                <!-- JS Populated -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Data Table Section - Transactions -->
+            <section class="table-section" id="transactions">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>입출고 내역</h3>
+                        <div class="header-actions">
+                            <button id="exportTransactionsBtn" class="btn-success"><i class='bx bx-table'></i> 엑셀 다운로드</button>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="modern-table">
+                            <thead>
+                                <tr>
+                                    <th>일시</th>
+                                    <th>구분</th>
+                                    <th>공급사</th>
+                                    <th>상품명/내역</th>
+                                    <th>수량</th>
+                                    <th>단가</th>
+                                    <th>비고</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactionTableBody">
                                 <!-- JS Populated -->
                             </tbody>
                         </table>
