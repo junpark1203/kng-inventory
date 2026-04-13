@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K&G 실시간 재고 관리 시스템</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Icons -->
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="brand">
+                <i class='bx bx-cube-alt'></i>
+                <h2>K&G <span>Inventory</span></h2>
+            </div>
+            <nav class="menu">
+                <a href="#" class="active"><i class='bx bx-grid-alt'></i> 대시보드</a>
+                <a href="#inventory"><i class='bx bx-box'></i> 재고 목록</a>
+                <a href="#transactions"><i class='bx bx-list-ul'></i> 입출고 내역</a>
+                <a href="#settings"><i class='bx bx-cog'></i> 환경설정</a>
+            </nav>
+            <div class="sidebar-footer">
+                <p>Status: <span class="status online" style="color: var(--success); font-weight: 600;"><i class='bx bxl-firebase'></i> Firebase Online</span></p>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="topbar">
+                <div class="search-wrap">
+                    <i class='bx bx-search'></i>
+                    <input type="text" id="searchInput" placeholder="상품명 또는 바코드 검색...">
+                </div>
+                <div class="user-profile">
+                    <img src="https://ui-avatars.com/api/?name=Admin&background=0D8ABC&color=fff" alt="User">
+                    <span>관리자</span>
+                </div>
+            </header>
+
+            <div class="dashboard-widgets">
+                <div class="widget">
+                    <div class="widget-icon primary"><i class='bx bx-package'></i></div>
+                    <div class="widget-info">
+                        <h3>총 재고 수량</h3>
+                        <p id="totalStockCount">0</p>
+                    </div>
+                </div>
+                <div class="widget">
+                    <div class="widget-icon success"><i class='bx bx-trending-up'></i></div>
+                    <div class="widget-info">
+                        <h3>총 매출 (출고 누적)</h3>
+                        <p id="totalRevenue">₩ 0</p>
+                    </div>
+                </div>
+                <div class="widget">
+                    <div class="widget-icon warning"><i class='bx bx-shopping-bag'></i></div>
+                    <div class="widget-info">
+                        <h3>총 매입 (비용 누적)</h3>
+                        <p id="totalCost">₩ 0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Forms Section -->
+            <section class="forms-section">
+                <div class="card form-card">
+                    <div class="card-header">
+                        <h3>입출고 등록</h3>
+                        <div class="toggle-group">
+                            <input type="radio" id="typeIn" name="txType" value="IN" checked>
+                            <label for="typeIn" class="btn-toggle">매입 (IN)</label>
+                            <input type="radio" id="typeOut" name="txType" value="OUT">
+                            <label for="typeOut" class="btn-toggle">출고 (OUT)</label>
+                        </div>
+                    </div>
+                    <form id="transactionForm" class="grid-form">
+                        <div class="form-group">
+                            <label for="productSelect">상품명 (컬러/사이즈)</label>
+                            <select id="productSelect" required>
+                                <option value="">상품을 선택하세요</option>
+                                <!-- JS Populated -->
+                            </select>
+                        </div>
+                        <div class="form-group row-group">
+                            <div class="half">
+                                <label for="txQty">수량</label>
+                                <input type="number" id="txQty" min="1" required placeholder="예: 5">
+                            </div>
+                            <div class="half">
+                                <label for="txPrice">적용 단가 (₩)</label>
+                                <input type="number" id="txPrice" min="0" required placeholder="단가 입력">
+                                <small id="priceHint" class="hint">매입 단가 기준</small>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-primary">
+                            <i class='bx bx-plus-circle'></i> 내역 등록
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Data Table Section -->
+            <section class="table-section" id="inventory">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>실시간 재고 현황</h3>
+                        <button id="resetDataBtn" class="btn-danger"><i class='bx bx-reset'></i> 데이터 초기화</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="modern-table">
+                            <thead>
+                                <tr>
+                                    <th>브랜드</th>
+                                    <th>상품명</th>
+                                    <th>컬러</th>
+                                    <th>사이즈</th>
+                                    <th>매입 단가</th>
+                                    <th>매출 단가</th>
+                                    <th>현재 재고</th>
+                                    <th>재고 금액(매입가)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventoryTableBody">
+                                <!-- JS Populated -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
