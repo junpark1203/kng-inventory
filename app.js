@@ -311,12 +311,19 @@ function toggleFormMode(type) {
 }
 
 function updateTxPrice() {
-    const base = parseInt(document.getElementById('txBasePrice').value, 10) || 0;
-    const freight = parseInt(document.getElementById('txFreight').value, 10) || 0;
-    document.getElementById('txPrice').value = base + freight;
+    const baseRaw = parseInt(document.getElementById('txBasePrice').value, 10) || 0;
+    const freightRaw = parseInt(document.getElementById('txFreight').value, 10) || 0;
+    
+    // true = 부가세 별도 (순수 단가), false = 부가세 포함 (나누기 1.1 필요)
+    const pureBase = document.getElementById('txBaseVat').checked ? baseRaw : Math.round(baseRaw / 1.1);
+    const pureFreight = document.getElementById('txFreightVat').checked ? freightRaw : Math.round(freightRaw / 1.1);
+    
+    document.getElementById('txPrice').value = pureBase + pureFreight;
 }
 document.getElementById('txBasePrice').addEventListener('input', updateTxPrice);
 document.getElementById('txFreight').addEventListener('input', updateTxPrice);
+document.getElementById('txBaseVat').addEventListener('change', updateTxPrice);
+document.getElementById('txFreightVat').addEventListener('change', updateTxPrice);
 
 document.querySelectorAll('input[name="txType"]').forEach(radio => {
     radio.addEventListener('change', (e) => toggleFormMode(e.target.value));
@@ -510,9 +517,15 @@ document.getElementById('transactionForm').addEventListener('submit', async (e) 
     
     const qty = parseInt(document.getElementById('txQty').value, 10);
     const price = parseInt(document.getElementById('txPrice').value, 10);
-    const basePrice = parseInt(document.getElementById('txBasePrice').value, 10) || 0;
-    const freight = parseInt(document.getElementById('txFreight').value, 10) || 0;
-    const vatExcluded = document.getElementById('txVatOption').checked;
+    const baseRaw = parseInt(document.getElementById('txBasePrice').value, 10) || 0;
+    const freightRaw = parseInt(document.getElementById('txFreight').value, 10) || 0;
+    const isBaseVatExcluded = document.getElementById('txBaseVat').checked;
+    const isFreightVatExcluded = document.getElementById('txFreightVat').checked;
+    
+    // DB에는 항상 순수 기준(부가세 별도) 단가만 저장.
+    const basePrice = isBaseVatExcluded ? baseRaw : Math.round(baseRaw / 1.1);
+    const freight = isFreightVatExcluded ? freightRaw : Math.round(freightRaw / 1.1);
+    
     const txDate = document.getElementById('txDate').value;
     const remarks = document.getElementById('txRemarks').value.trim();
     const type = document.querySelector('input[name="txType"]:checked').value;
@@ -619,10 +632,11 @@ document.getElementById('transactionForm').addEventListener('submit', async (e) 
                 supplier: fSupplier,
                 type: type,
                 qty: qty,
-                price: price,
+                price: price, // This is derived exactly from txPrice (the pure unit cost)
                 basePrice: basePrice,
                 freight: freight,
-                vatExcluded: vatExcluded,
+                baseVatExcluded: isBaseVatExcluded,
+                freightVatExcluded: isFreightVatExcluded,
                 buyPrice: buyPriceForLog, // OUT 시 마진율 계산을 위해 저장
                 txDate: txDate,
                 remarks: remarks,
