@@ -52,7 +52,8 @@ body {
 }
 
 .brand {
-    padding: 24px;
+    height: 80px;
+    padding: 0 24px;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -118,8 +119,9 @@ body {
 }
 
 .topbar {
+    height: 80px;
     background: var(--white);
-    padding: 16px 32px;
+    padding: 0 32px;
     display: flex;
     justify-content: space-between;
     align-items: center;
