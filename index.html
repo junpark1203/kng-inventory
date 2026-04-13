@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="K&G 실시간 재고 관리 시스템 - 매입/매출 관리, 재고 추적, 입출고 내역 관리">
     <title>K&G 실시간 재고 관리 시스템</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,26 +15,32 @@
 </head>
 <body>
     <div class="app-container">
+        <!-- Mobile Overlay -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
         <!-- Sidebar -->
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
             <div class="brand">
                 <img src="libraries/logo/20251208 KNG Logo_ENG.png" alt="K&G Logo" class="brand-logo">
             </div>
             <nav class="menu">
-                <a href="#" class="active"><i class='bx bx-grid-alt'></i> 대시보드</a>
+                <a href="#dashboard" class="active"><i class='bx bx-grid-alt'></i> 대시보드</a>
+                <a href="#forms"><i class='bx bx-plus-circle'></i> 입출고 등록</a>
                 <a href="#inventory"><i class='bx bx-box'></i> 재고 목록</a>
                 <a href="#transactions"><i class='bx bx-list-ul'></i> 입출고 내역</a>
-                <a href="#settings"><i class='bx bx-cog'></i> 환경설정</a>
             </nav>
             <div class="sidebar-footer">
-                <p>Status: <span class="status online" style="color: var(--success); font-weight: 600;"><i class='bx bxl-firebase'></i> Firebase Online</span></p>
+                <p>Status: <span id="firebaseStatus" class="status" style="font-weight: 600;"><i class='bx bx-loader-alt bx-spin'></i> 연결 중...</span></p>
             </div>
         </aside>
 
         <!-- Main Content -->
         <main class="main-content">
             <header class="topbar">
-                <div style="display: flex; gap: 20px; align-items: center;">
+                <div style="display: flex; gap: 12px; align-items: center;">
+                    <button class="hamburger-btn" id="hamburgerBtn" aria-label="메뉴 열기">
+                        <i class='bx bx-menu'></i>
+                    </button>
                     <div class="search-wrap">
                         <i class='bx bx-search'></i>
                         <input type="text" id="searchInput" placeholder="상품명 또는 바코드 검색...">
@@ -48,7 +55,8 @@
                 </div>
             </header>
 
-            <div class="dashboard-widgets">
+            <!-- Dashboard Section -->
+            <div class="dashboard-widgets" id="dashboard">
                 <div class="widget">
                     <div class="widget-icon primary"><i class='bx bx-package'></i></div>
                     <div class="widget-info">
@@ -73,7 +81,7 @@
             </div>
 
             <!-- Forms Section -->
-            <section class="forms-section">
+            <section class="forms-section" id="forms">
                 <div class="card form-card">
                     <div class="card-header">
                         <h3>입출고 등록</h3>
@@ -85,7 +93,7 @@
                         </div>
                     </div>
                     <form id="transactionForm" class="grid-form" autocomplete="off">
-                        <!-- OUTBOUND 전용 검색 래퍼 (입고 시에는 숨김 처리) -->
+                        <!-- OUTBOUND 전용 검색 래퍼 -->
                         <div class="form-group hidden" id="outboundSearchContainer">
                             <label for="outSearchInput">출고 상품 검색</label>
                             <div class="autocomplete">
@@ -93,7 +101,7 @@
                             </div>
                         </div>
 
-                        <!-- 품목 기본 정보 (IN: 자유 입력 / OUT: 읽기 전용) -->
+                        <!-- 품목 기본 정보 -->
                         <div class="form-group row-group">
                             <div class="half">
                                 <label for="fSupplier">공급사</label>
@@ -121,9 +129,8 @@
                             </div>
                         </div>
 
-                        <!-- 수량 및 가격 -->
-                        <!-- 수량 및 단가 계산 로직 -->
-                        <div class="form-group row-group">
+                        <!-- 수량 및 가격 (출고 시 숨김) -->
+                        <div class="form-group row-group" id="priceCalcRow">
                             <div class="half">
                                 <label for="txBasePrice">상품가</label>
                                 <input type="number" id="txBasePrice" min="0" placeholder="예: 1000">
@@ -154,7 +161,7 @@
                         <!-- 부가 정보 -->
                         <div class="form-group row-group">
                             <div class="half">
-                                <label for="txDate">일일 (Date)</label>
+                                <label for="txDate">일자 (Date)</label>
                                 <input type="date" id="txDate" required>
                             </div>
                             <div class="half">
@@ -172,7 +179,7 @@
                 </div>
             </section>
 
-            <!-- Data Table Section -->
+            <!-- Data Table Section — 재고 현황 -->
             <section class="table-section" id="inventory">
                 <div class="card">
                     <div class="card-header">
@@ -198,14 +205,17 @@
                                 </tr>
                             </thead>
                             <tbody id="inventoryTableBody">
-                                <!-- JS Populated -->
+                                <tr class="loading-row"><td colspan="9"><div class="skeleton"></div></td></tr>
+                                <tr class="loading-row"><td colspan="9"><div class="skeleton"></div></td></tr>
+                                <tr class="loading-row"><td colspan="9"><div class="skeleton"></div></td></tr>
                             </tbody>
                         </table>
                     </div>
+                    <div class="pagination" id="invPagination"></div>
                 </div>
             </section>
 
-            <!-- Data Table Section - Transactions -->
+            <!-- Data Table Section — 입출고 내역 -->
             <section class="table-section" id="transactions">
                 <div class="card">
                     <div class="card-header">
@@ -231,14 +241,20 @@
                                 </tr>
                             </thead>
                             <tbody id="transactionTableBody">
-                                <!-- JS Populated -->
+                                <tr class="loading-row"><td colspan="9"><div class="skeleton"></div></td></tr>
+                                <tr class="loading-row"><td colspan="9"><div class="skeleton"></div></td></tr>
+                                <tr class="loading-row"><td colspan="9"><div class="skeleton"></div></td></tr>
                             </tbody>
                         </table>
                     </div>
+                    <div class="pagination" id="txPagination"></div>
                 </div>
             </section>
         </main>
     </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
 
     <script type="module" src="app.js"></script>
 </body>
