@@ -466,6 +466,9 @@ document.getElementById('transactionForm').addEventListener('submit', async (e) 
     
     const qty = parseInt(document.getElementById('txQty').value, 10);
     const price = parseInt(document.getElementById('txPrice').value, 10);
+    const basePrice = parseInt(document.getElementById('txBasePrice').value, 10) || 0;
+    const freight = parseInt(document.getElementById('txFreight').value, 10) || 0;
+    const vatExcluded = document.getElementById('txVatOption').checked;
     const txDate = document.getElementById('txDate').value;
     const remarks = document.getElementById('txRemarks').value.trim();
     const type = document.querySelector('input[name="txType"]:checked').value;
@@ -501,6 +504,7 @@ document.getElementById('transactionForm').addEventListener('submit', async (e) 
             let targetProductId;
             let currentStock = 0;
             let productName = fName;
+            let buyPriceForLog = null;
 
             if (type === 'OUT') {
                 targetProductId = document.getElementById('selectedProductId').value;
@@ -515,6 +519,7 @@ document.getElementById('transactionForm').addEventListener('submit', async (e) 
                 
                 currentStock = prodData.stock - qty;
                 productName = prodData.name;
+                buyPriceForLog = prodData.buyPrice;
 
                 transaction.update(prodRef, { 
                     stock: currentStock,
@@ -571,6 +576,10 @@ document.getElementById('transactionForm').addEventListener('submit', async (e) 
                 type: type,
                 qty: qty,
                 price: price,
+                basePrice: basePrice,
+                freight: freight,
+                vatExcluded: vatExcluded,
+                buyPrice: buyPriceForLog, // OUT 시 마진율 계산을 위해 저장
                 txDate: txDate,
                 remarks: remarks,
                 timestamp: new Date().toISOString()
