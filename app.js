@@ -528,19 +528,26 @@ document.getElementById('deleteInvBtn').addEventListener('click', async () => {
     try {
         await runTransaction(db, async (transaction) => {
             const metricsRef = doc(db, 'kng_data', 'metrics');
+            
+            // 1) All Reads
             const metricsSnap = await transaction.get(metricsRef);
             if (!metricsSnap.exists()) throw "데이터를 찾을 수 없습니다.";
             let metricsData = metricsSnap.data();
-            let costToRestore = 0;
 
+            const prodDocs = [];
             for (let cb of checked) {
                 const prodRef = doc(db, 'kng_products', cb.value);
                 const prodSnap = await transaction.get(prodRef);
                 if (prodSnap.exists()) {
-                    const p = prodSnap.data();
-                    costToRestore += (p.stock * p.buyPrice);
-                    transaction.delete(prodRef);
+                    prodDocs.push({ ref: prodRef, data: prodSnap.data() });
                 }
+            }
+
+            // 2) All Writes
+            let costToRestore = 0;
+            for (const item of prodDocs) {
+                costToRestore += (item.data.stock * item.data.buyPrice);
+                transaction.delete(item.ref);
             }
 
             transaction.update(metricsRef, { 
@@ -571,42 +578,55 @@ document.getElementById('deleteTxBtn').addEventListener('click', async () => {
     try {
         await runTransaction(db, async (transaction) => {
             const metricsRef = doc(db, 'kng_data', 'metrics');
+            
+            // 1) ALL READS
             const metricsSnap = await transaction.get(metricsRef);
             if (!metricsSnap.exists()) throw "데이터를 찾을 수 없습니다.";
             let metricsData = metricsSnap.data();
             
-            let revToRestore = 0;
-            let costToRestore = 0;
-            const stockChanges = {}; // 상품ID 별 재고 증감 누적 기록본
+            const txDocs = [];
+            const stockChanges = {}; 
 
-            // 1) 체크된 트랜잭션 정보 취합
             for (let cb of checked) {
                 const txRef = doc(db, 'kng_transactions', cb.value);
                 const txSnap = await transaction.get(txRef);
                 if (txSnap.exists()) {
                     const t = txSnap.data();
-                    if(t.type === 'IN') { // 매입 취소 시: 비용차감, 재고원복(차감)
-                        costToRestore += (t.qty * t.price);
+                    txDocs.push({ ref: txRef, data: t });
+                    
+                    if(t.type === 'IN') {
                         if(t.productId) stockChanges[t.productId] = (stockChanges[t.productId] || 0) - t.qty;
-                    } else if (t.type === 'OUT') { // 매출 취소 시: 수익차감, 재고원복(증가)
-                        revToRestore += (t.qty * t.price);
+                    } else if (t.type === 'OUT') {
                         if(t.productId) stockChanges[t.productId] = (stockChanges[t.productId] || 0) + t.qty;
                     }
-                    transaction.delete(txRef);
                 }
             }
 
-            // 2) 실제 상품(Products) Document들에 재고 롤백 적용
+            const prodDocs = [];
             for (const pid in stockChanges) {
                 const prodRef = doc(db, 'kng_products', pid);
                 const prodSnap = await transaction.get(prodRef);
                 if(prodSnap.exists()) {
-                    const newStock = prodSnap.data().stock + stockChanges[pid];
-                    transaction.update(prodRef, { stock: Math.max(0, newStock) }); // 음수 방어
+                    prodDocs.push({ ref: prodRef, data: prodSnap.data(), pid: pid });
                 }
             }
 
-            // 3) 대시보드 통계 저장
+            // 2) ALL WRITES
+            let revToRestore = 0;
+            let costToRestore = 0;
+
+            for (const item of txDocs) {
+                const t = item.data;
+                if(t.type === 'IN') costToRestore += (t.qty * t.price);
+                else if (t.type === 'OUT') revToRestore += (t.qty * t.price);
+                transaction.delete(item.ref);
+            }
+
+            for (const item of prodDocs) {
+                const newStock = item.data.stock + stockChanges[item.pid];
+                transaction.update(item.ref, { stock: Math.max(0, newStock) });
+            }
+
             transaction.update(metricsRef, { 
                 totalRevenue: Math.max(0, (metricsData.totalRevenue || 0) - revToRestore),
                 totalCost: Math.max(0, (metricsData.totalCost || 0) - costToRestore)
