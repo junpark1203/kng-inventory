@@ -17,7 +17,7 @@
         <!-- Sidebar -->
         <aside class="sidebar">
             <div class="brand">
-                <h2 class="kng-logo"><span class="kng-yellow">K&G</span> <span class="kng-sub">Inventory</span></h2>
+                <img src="libraries/logo/20251208 KNG Logo_ENG.png" alt="K&G Logo" class="brand-logo">
             </div>
             <nav class="menu">
                 <a href="#" class="active"><i class='bx bx-grid-alt'></i> 대시보드</a>
@@ -156,14 +156,15 @@
                     <div class="card-header">
                         <h3>실시간 재고 현황</h3>
                         <div class="header-actions">
+                            <button id="deleteInvBtn" class="btn-danger"><i class='bx bx-trash'></i> 선택 삭제</button>
                             <button id="exportInventoryBtn" class="btn-success"><i class='bx bx-table'></i> 엑셀 다운로드</button>
-                            <button id="resetDataBtn" class="btn-danger"><i class='bx bx-reset'></i> 데이터 초기화</button>
                         </div>
                     </div>
                     <div class="table-responsive">
                         <table class="modern-table">
                             <thead>
                                 <tr>
+                                    <th style="width: 40px;"><input type="checkbox" id="selectAllInv"></th>
                                     <th>공급사</th>
                                     <th>브랜드</th>
                                     <th>상품명</th>
@@ -189,6 +190,7 @@
                     <div class="card-header">
                         <h3>입출고 내역</h3>
                         <div class="header-actions">
+                            <button id="deleteTxBtn" class="btn-danger"><i class='bx bx-trash'></i> 선택 삭제</button>
                             <button id="exportTransactionsBtn" class="btn-success"><i class='bx bx-table'></i> 엑셀 다운로드</button>
                         </div>
                     </div>
@@ -196,6 +198,7 @@
                         <table class="modern-table">
                             <thead>
                                 <tr>
+                                    <th style="width: 40px;"><input type="checkbox" id="selectAllTx"></th>
                                     <th>일시</th>
                                     <th>구분</th>
                                     <th>공급사</th>

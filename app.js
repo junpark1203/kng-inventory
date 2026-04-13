@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-analytics.js";
 import { 
-    getFirestore, collection, doc, getDoc, setDoc, updateDoc, 
+    getFirestore, collection, doc, getDoc, setDoc, updateDoc, deleteDoc,
     onSnapshot, runTransaction, writeBatch, query 
 } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
 
@@ -116,7 +116,7 @@ async function initFirebase() {
 }
 
 // ==========================================
-// 인라인 수정 스크립트 노출
+// 인라인 수정 스크립트
 // ==========================================
 window.toggleEdit = function(id) {
     editingRowId = id;
@@ -149,7 +149,6 @@ window.saveEdit = async function(id) {
     } catch(e) {
         alert('수정 실패: ' + e);
     }
-    // No need to re-render, onSnapshot will fire automatically
 }
 
 // ==========================================
@@ -172,9 +171,11 @@ function renderTable(searchTerm = '') {
     filtered.forEach(p => {
         const tr = document.createElement('tr');
         const sp = p.supplier || '최가유통';
+        const checkboxHtml = `<td><input type="checkbox" class="inv-checkbox" value="${p.id}"></td>`;
         
         if (editingRowId === p.id) {
             tr.innerHTML = `
+                ${checkboxHtml}
                 <td><input type="text" class="inline-input" id="edit-sp-${p.id}" value="${sp}"></td>
                 <td><input type="text" class="inline-input" id="edit-br-${p.id}" value="${p.brand}"></td>
                 <td><input type="text" class="inline-input" id="edit-nm-${p.id}" value="${p.name}"></td>
@@ -191,6 +192,7 @@ function renderTable(searchTerm = '') {
         } else {
             const badgeClass = p.stock <= 2 ? 'stock-badge low' : 'stock-badge';
             tr.innerHTML = `
+                ${checkboxHtml}
                 <td>${sp}</td>
                 <td>${p.brand}</td>
                 <td>${p.name}</td>
@@ -214,8 +216,10 @@ function renderTransactionsTable() {
         const tr = document.createElement('tr');
         const badgeClass = t.type === 'IN' ? 'stock-badge' : 'stock-badge low';
         const typeLabel = t.type === 'IN' ? '매입' : '출고';
-        
+        const checkboxHtml = `<td><input type="checkbox" class="tx-checkbox" value="${t.id}"></td>`;
+
         tr.innerHTML = `
+            ${checkboxHtml}
             <td>${t.txDate || t.timestamp.split('T')[0]}</td>
             <td><span class="${badgeClass}">${typeLabel}</span></td>
             <td>${t.supplier || '-'}</td>
@@ -497,8 +501,131 @@ document.getElementById('transactionForm').addEventListener('submit', async (e) 
     }
 });
 
+
 // ==========================================
-// 엑셀(CSV) 다운로드 함수 모음
+// 체크박스 전체선택 및 삭제 로직
+// ==========================================
+
+document.getElementById('selectAllInv').addEventListener('change', (e) => {
+    document.querySelectorAll('.inv-checkbox').forEach(cb => cb.checked = e.target.checked);
+});
+
+document.getElementById('selectAllTx').addEventListener('change', (e) => {
+    document.querySelectorAll('.tx-checkbox').forEach(cb => cb.checked = e.target.checked);
+});
+
+// 재고 현황 - 상품 일괄 삭제
+document.getElementById('deleteInvBtn').addEventListener('click', async () => {
+    const checked = document.querySelectorAll('.inv-checkbox:checked');
+    if(checked.length === 0) return alert('삭제할 상품 항목을 선택해주세요.');
+    if(!confirm(`선택한 ${checked.length}개의 상품을 목록에서 완전히 삭제하시겠습니까?\n해당 상품들의 초기 매입 원가가 총 매입액에서 정산(차감)됩니다.\n(경고: 이 작업은 영구적입니다.)`)) return;
+
+    const btn = document.getElementById('deleteInvBtn');
+    const oldHtml = btn.innerHTML;
+    btn.innerHTML = '삭제 중...';
+    btn.disabled = true;
+
+    try {
+        await runTransaction(db, async (transaction) => {
+            const metricsRef = doc(db, 'kng_data', 'metrics');
+            const metricsSnap = await transaction.get(metricsRef);
+            if (!metricsSnap.exists()) throw "데이터를 찾을 수 없습니다.";
+            let metricsData = metricsSnap.data();
+            let costToRestore = 0;
+
+            for (let cb of checked) {
+                const prodRef = doc(db, 'kng_products', cb.value);
+                const prodSnap = await transaction.get(prodRef);
+                if (prodSnap.exists()) {
+                    const p = prodSnap.data();
+                    costToRestore += (p.stock * p.buyPrice);
+                    transaction.delete(prodRef);
+                }
+            }
+
+            transaction.update(metricsRef, { 
+                totalCost: Math.max(0, (metricsData.totalCost || 0) - costToRestore)
+            });
+        });
+        document.getElementById('selectAllInv').checked = false;
+    } catch(e) {
+        alert('삭제 실패: ' + e);
+        console.error(e);
+    } finally {
+        btn.innerHTML = oldHtml;
+        btn.disabled = false;
+    }
+});
+
+// 입출고 내역 - 기록 일괄 삭제 및 정산 복구
+document.getElementById('deleteTxBtn').addEventListener('click', async () => {
+    const checked = document.querySelectorAll('.tx-checkbox:checked');
+    if(checked.length === 0) return alert('삭제할 내역을 하나 이상 선택해주세요.');
+    if(!confirm(`선택한 ${checked.length}개의 내역을 삭제하시겠습니까?\n관련된 상품 재고량과 정산 금액(매출/매입액)이 롤백 복구됩니다.\n(경고: 이 작업은 영구적입니다.)`)) return;
+
+    const btn = document.getElementById('deleteTxBtn');
+    const oldHtml = btn.innerHTML;
+    btn.innerHTML = '삭제 중...';
+    btn.disabled = true;
+
+    try {
+        await runTransaction(db, async (transaction) => {
+            const metricsRef = doc(db, 'kng_data', 'metrics');
+            const metricsSnap = await transaction.get(metricsRef);
+            if (!metricsSnap.exists()) throw "데이터를 찾을 수 없습니다.";
+            let metricsData = metricsSnap.data();
+            
+            let revToRestore = 0;
+            let costToRestore = 0;
+            const stockChanges = {}; // 상품ID 별 재고 증감 누적 기록본
+
+            // 1) 체크된 트랜잭션 정보 취합
+            for (let cb of checked) {
+                const txRef = doc(db, 'kng_transactions', cb.value);
+                const txSnap = await transaction.get(txRef);
+                if (txSnap.exists()) {
+                    const t = txSnap.data();
+                    if(t.type === 'IN') { // 매입 취소 시: 비용차감, 재고원복(차감)
+                        costToRestore += (t.qty * t.price);
+                        if(t.productId) stockChanges[t.productId] = (stockChanges[t.productId] || 0) - t.qty;
+                    } else if (t.type === 'OUT') { // 매출 취소 시: 수익차감, 재고원복(증가)
+                        revToRestore += (t.qty * t.price);
+                        if(t.productId) stockChanges[t.productId] = (stockChanges[t.productId] || 0) + t.qty;
+                    }
+                    transaction.delete(txRef);
+                }
+            }
+
+            // 2) 실제 상품(Products) Document들에 재고 롤백 적용
+            for (const pid in stockChanges) {
+                const prodRef = doc(db, 'kng_products', pid);
+                const prodSnap = await transaction.get(prodRef);
+                if(prodSnap.exists()) {
+                    const newStock = prodSnap.data().stock + stockChanges[pid];
+                    transaction.update(prodRef, { stock: Math.max(0, newStock) }); // 음수 방어
+                }
+            }
+
+            // 3) 대시보드 통계 저장
+            transaction.update(metricsRef, { 
+                totalRevenue: Math.max(0, (metricsData.totalRevenue || 0) - revToRestore),
+                totalCost: Math.max(0, (metricsData.totalCost || 0) - costToRestore)
+            });
+        });
+
+        document.getElementById('selectAllTx').checked = false;
+    } catch(e) {
+        alert('삭제 실패: ' + e);
+        console.error(e);
+    } finally {
+        btn.innerHTML = oldHtml;
+        btn.disabled = false;
+    }
+});
+
+
+// ==========================================
+// 엑셀(CSV) 다운로드
 // ==========================================
 function downloadCSV(data, filename) {
     if(!data || data.length === 0) return alert('내보낼 데이터가 없습니다.');
@@ -558,33 +685,6 @@ document.getElementById('searchInput').addEventListener('input', (e) => {
     renderTable(e.target.value);
 });
 
-// 데이터 초기화 버튼 (DB 전체 초기화)
-document.getElementById('resetDataBtn').addEventListener('click', async () => {
-    if (confirm('클라우드 상의 모든 데이터를 최초 상태(초기 재고 및 매출 0)로 복구하시겠습니까? (이 작업은 영구적입니다)')) {
-        const btn = document.getElementById('resetDataBtn');
-        const oldHtml = btn.innerHTML;
-        btn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> 초기화 중...";
-        btn.disabled = true;
-        
-        try {
-            const batch = writeBatch(db);
-            const initialCost = initialProducts.reduce((sum, p) => sum + (p.buyPrice * p.stock), 0);
-            batch.set(doc(db, 'kng_data', 'metrics'), { totalRevenue: 0, totalCost: initialCost });
-            
-            initialProducts.forEach(p => {
-                batch.set(doc(db, 'kng_products', p.id), p);
-            });
-            
-            await batch.commit();
-            alert('데이터베이스가 초기화 되었습니다.');
-        } catch (e) {
-            alert('초기화 실패: ' + e);
-        } finally {
-            btn.innerHTML = oldHtml;
-            btn.disabled = false;
-        }
-    }
-});
 
 // 앱 시작
 document.addEventListener('DOMContentLoaded', () => {

@@ -57,27 +57,11 @@ body {
     align-items: center;
     gap: 12px;
     border-bottom: 1px solid var(--light-border);
-}
-
-.kng-logo {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin: 0;
-}
-
-.kng-yellow {
-    font-size: 30px;
-    font-weight: 900;
-    font-style: italic;
-    color: #ffcc00; 
-    letter-spacing: -2px;
-}
-
-.kng-sub {
-    font-size: 18px;
-    font-weight: 500;
-    color: var(--primary);
+.brand-logo {
+    max-width: 100%;
+    height: auto;
+    max-height: 48px;
+    display: block;
 }
 
 .menu {
