@@ -240,39 +240,45 @@ function updateDashboard() {
 }
 
 // ==========================================
-// 입출고 폼 토글 로직
+// 입출고 폼 토글 로직 & 단가 합산
 // ==========================================
 const formFields = ['fSupplier', 'fBrand', 'fName', 'fColor', 'fSize'];
 const outSearchContainer = document.getElementById('outboundSearchContainer');
 
 function toggleFormMode(type) {
-    const hint = document.getElementById('priceHint');
+    const lblTxPrice = document.getElementById('lblTxPrice');
     if (type === 'IN') {
-        hint.textContent = '매입 단가 기준';
+        if(lblTxPrice) lblTxPrice.textContent = '매입단가 (₩)';
         outSearchContainer.classList.add('hidden');
         document.getElementById('outSearchInput').value = '';
         formFields.forEach(id => {
             const el = document.getElementById(id);
-            el.readOnly = false;
-            el.classList.remove('readonly-input');
+            if(el) { el.readOnly = false; el.classList.remove('readonly-input'); }
         });
         document.getElementById('selectedProductId').value = '';
         document.getElementById('transactionForm').reset();
         document.getElementById('typeIn').checked = true;
         setTodayDate();
     } else {
-        hint.textContent = '매출 단가 기준 (재고 차감)';
+        if(lblTxPrice) lblTxPrice.textContent = '매출단가 (₩)';
         outSearchContainer.classList.remove('hidden');
         formFields.forEach(id => {
             const el = document.getElementById(id);
-            el.readOnly = true;
-            el.classList.add('readonly-input');
+            if(el) { el.readOnly = true; el.classList.add('readonly-input'); }
         });
         document.getElementById('transactionForm').reset();
         document.getElementById('typeOut').checked = true;
         setTodayDate();
     }
 }
+
+function updateTxPrice() {
+    const base = parseInt(document.getElementById('txBasePrice').value, 10) || 0;
+    const freight = parseInt(document.getElementById('txFreight').value, 10) || 0;
+    document.getElementById('txPrice').value = base + freight;
+}
+document.getElementById('txBasePrice').addEventListener('input', updateTxPrice);
+document.getElementById('txFreight').addEventListener('input', updateTxPrice);
 
 document.querySelectorAll('input[name="txType"]').forEach(radio => {
     radio.addEventListener('change', (e) => toggleFormMode(e.target.value));
