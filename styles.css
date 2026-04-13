@@ -59,19 +59,25 @@ body {
     border-bottom: 1px solid var(--light-border);
 }
 
-.brand i {
-    font-size: 28px;
-    color: var(--primary);
+.kng-logo {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
 }
 
-.brand h2 {
-    font-size: 20px;
-    font-weight: 700;
+.kng-yellow {
+    font-size: 30px;
+    font-weight: 900;
+    font-style: italic;
+    color: #ffcc00; 
+    letter-spacing: -2px;
 }
 
-.brand h2 span {
+.kng-sub {
+    font-size: 18px;
+    font-weight: 500;
     color: var(--primary);
-    font-weight: 300;
 }
 
 .menu {
