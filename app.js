@@ -438,7 +438,7 @@ function renderTransactionsTable() {
             '<td>' + t.qty + '</td>' +
             '<td>' + formatCurrency(displayPrice) + '</td>' +
             '<td>' + marginHtml + '</td>' +
-            '<td>' + escapeHtml(t.remarks || '') + '</td>';
+            '<td>' + escapeHtml(t.remarks || '') + '</td>' +\n            '<td><button class="btn-action" onclick="openTxEditModal(\'' + escapeHtml(t.id) + '\')"><i class="bx bx-edit-alt"></i> 수정</button></td>';
         tbody.appendChild(tr);
     });
 
