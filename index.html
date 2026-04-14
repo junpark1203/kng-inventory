@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 
 <head>
@@ -160,9 +160,9 @@
                                             placeholder="0"><label class="vat-chip"><input type="checkbox"
                                                 id="txFreightVat" checked><span>VAT별도</span></label></div>
                                 </div>
-                                <div class="fg"><label id="lblTxPrice" for="txPrice">매입단가 (₩)</label><input
+                                <div class="fg"><label id="lblTxPrice" for="txPrice">매입단가 (₩)</label><div class="input-vat-group"><input
                                         type="number" id="txPrice" min="0" required placeholder="자동계산" readonly
-                                        class="readonly-input"></div>
+                                        class="readonly-input"><label class="vat-chip hidden" id="sellVatChipWrap"><input type="checkbox" id="txSellVat" checked><span>VAT포함</span></label></div></div>
                             </div>
                             <div class="form-row fr-row4">
                                 <div class="fg"><label for="txRemarks">비고</label><input type="text" id="txRemarks"
