@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  kng-api:
+    build: .
+    container_name: kng_inventory_api
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      # NAS의 도커 폴더와 컨테이너 안의 DB 폴더를 연결 (데이터 영구 보존)
+      # [주의] 이 부분은 NAS의 실제 경로로 수정될 수 있습니다. 현재 경로로 실행하면 server/data 폴더에 마운트됩니다.
+      - ./data:/usr/src/app/data

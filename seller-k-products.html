@@ -1,11 +1,11 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="K&G 셀러K 스마트스토어 매입상품 리스트 - 매입/매출/정산 관리">
-    <title>K&G 셀러K — 매입상품 리스트</title>
+    <meta name="description" content="K&G ??촋 ?ㅻ쭏?몄뒪?좎뼱 留ㅼ엯?곹뭹 由ъ뒪??- 留ㅼ엯/留ㅼ텧/?뺤궛 愿由?>
+    <title>K&G ??촋 ??留ㅼ엯?곹뭹 由ъ뒪??/title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -15,7 +15,38 @@
 </head>
 
 <body>
-    <!-- 메인 앱 -->
+    <!-- 濡쒓렇???ㅻ쾭?덉씠 -->
+    <div id="loginOverlay" class="login-overlay hidden">
+        <div class="login-box">
+            <div class="login-header">
+                <img src="libraries/logo/20251208 KNG Logo_ENG.png" alt="K&G Logo" class="login-logo">
+                <h2>K&G System Login</h2>
+                <p>?쒖뒪???묎렐 沅뚰븳???꾩슂?⑸땲??</p>
+            </div>
+            <form id="loginForm">
+                <div class="fg">
+                    <label for="loginEmail">?꾩씠??(?대찓??</label>
+                    <div class="input-icon">
+                        <i class='bx bx-user'></i>
+                        <input type="email" id="loginEmail" required placeholder="admin@kng.com">
+                    </div>
+                </div>
+                <div class="fg">
+                    <label for="loginPassword">鍮꾨?踰덊샇</label>
+                    <div class="input-icon">
+                        <i class='bx bx-lock-alt'></i>
+                        <input type="password" id="loginPassword" required placeholder="?™™™™™™™?>
+                    </div>
+                </div>
+                <button type="submit" class="btn-submit" id="loginBtn" style="margin-top: 15px;">
+                    濡쒓렇??
+                </button>
+            </form>
+            <div id="loginError" class="login-error hidden">?꾩씠???먮뒗 鍮꾨?踰덊샇媛 ??몄뒿?덈떎.</div>
+        </div>
+    </div>
+
+    <!-- 硫붿씤 ??-->
     <div class="app-container hidden" id="mainApp">
         <div class="sidebar-overlay" id="sidebarOverlay"></div>
         <aside class="sidebar" id="sidebar">
@@ -23,43 +54,43 @@
                 <img src="libraries/logo/20251208 KNG Logo_ENG.png" alt="K&G Logo" class="brand-logo">
             </div>
             <nav class="menu">
-                <div class="menu-label">메뉴</div>
-                <a href="index.html#dashboard"><i class='bx bx-grid-alt'></i> <span>대시보드</span></a>
-                <a href="index.html#forms"><i class='bx bx-plus-circle'></i> <span>입출고 등록</span></a>
-                <a href="index.html#inventory"><i class='bx bx-box'></i> <span>재고 목록</span></a>
-                <a href="index.html#transactions"><i class='bx bx-list-ul'></i> <span>입출고 내역</span></a>
-                <div class="menu-label">셀러K</div>
+                <div class="menu-label">硫붾돱</div>
+                <a href="index.html#dashboard"><i class='bx bx-grid-alt'></i> <span>??쒕낫??/span></a>
+                <a href="index.html#forms"><i class='bx bx-plus-circle'></i> <span>?낆텧怨??깅줉</span></a>
+                <a href="index.html#inventory"><i class='bx bx-box'></i> <span>?ш퀬 紐⑸줉</span></a>
+                <a href="index.html#transactions"><i class='bx bx-list-ul'></i> <span>?낆텧怨??댁뿭</span></a>
+                <div class="menu-label">??촋</div>
                 <div class="menu-group open" id="sellerKMenuGroup">
                     <div class="menu-group-toggle" id="sellerKToggle">
                         <i class='bx bx-store'></i>
-                        <span>스마트스토어</span>
+                        <span>?ㅻ쭏?몄뒪?좎뼱</span>
                         <i class='bx bx-chevron-down menu-arrow'></i>
                     </div>
                     <div class="menu-group-items">
-                        <a href="seller-k-products.html" class="active"><i class='bx bx-receipt'></i> <span>매입상품 리스트</span></a>
+                        <a href="seller-k-products.html" class="active"><i class='bx bx-receipt'></i> <span>留ㅼ엯?곹뭹 由ъ뒪??/span></a>
                         <a href="seller-k-bbb.html"><i class='bx bx-bar-chart-alt-2'></i> <span>BBB</span></a>
                         <a href="seller-k-ccc.html"><i class='bx bx-cog'></i> <span>CCC</span></a>
                     </div>
                 </div>
             </nav>
             <div class="sidebar-footer">
-                <a href="#" id="logoutBtn" class="logout-btn"><i class='bx bx-log-out'></i> 로그아웃</a>
+                <a href="#" id="logoutBtn" class="logout-btn"><i class='bx bx-log-out'></i> 濡쒓렇?꾩썐</a>
                 <div class="connection-status">
-                    <span id="firebaseStatus" class="status"><i class='bx bx-loader-alt bx-spin'></i> 연결 중...</span>
+                    <span id="firebaseStatus" class="status"><i class='bx bx-loader-alt bx-spin'></i> ?곌껐 以?..</span>
                 </div>
             </div>
         </aside>
         <main class="main-content">
             <header class="topbar">
                 <div class="topbar-left">
-                    <button class="hamburger-btn" id="hamburgerBtn" aria-label="메뉴 열기"><i class='bx bx-menu'></i></button>
+                    <button class="hamburger-btn" id="hamburgerBtn" aria-label="硫붾돱 ?닿린"><i class='bx bx-menu'></i></button>
                     <div class="search-wrap">
                         <i class='bx bx-search'></i>
-                        <input type="text" id="searchInput" placeholder="상품명, 매입처 검색...">
+                        <input type="text" id="searchInput" placeholder="?곹뭹紐? 留ㅼ엯泥?寃??..">
                     </div>
                 </div>
                 <div class="topbar-right">
-                    <button id="addProductBtn" class="btn-add-product"><i class='bx bx-plus-circle'></i> 신규 추가</button>
+                    <button id="addProductBtn" class="btn-add-product"><i class='bx bx-plus-circle'></i> ?좉퇋 異붽?</button>
                 </div>
             </header>
             <div class="page-body">
@@ -67,6 +98,198 @@
                 <div class="kpi-strip-sk" id="dashboard">
                     <div class="kpi-card">
                         <div class="kpi-icon kpi-items"><i class='bx bx-package'></i></div>
-                        <div class="kpi-data"><span class="kpi-label">총 상품 수</span><span class="kpi-value" id="kpiTotalItems">0</span></div>
+                        <div class="kpi-data"><span class="kpi-label">珥??곹뭹 ??/span><span class="kpi-value" id="kpiTotalItems">0</span></div>
                     </div>
-                    <div class="kpi-card
+                    <div class="kpi-card">
+                        <div class="kpi-icon kpi-purchase"><i class='bx bx-shopping-bag'></i></div>
+                        <div class="kpi-data"><span class="kpi-label">珥?留ㅼ엯 ?⑷퀎</span><span class="kpi-value" id="kpiTotalPurchase">??0</span></div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon kpi-sales-total"><i class='bx bx-trending-up'></i></div>
+                        <div class="kpi-data"><span class="kpi-label">珥?留ㅼ텧 ?⑷퀎</span><span class="kpi-value" id="kpiTotalSales">??0</span></div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon kpi-profit"><i class='bx bx-wallet'></i></div>
+                        <div class="kpi-data"><span class="kpi-label">珥??뺤궛 ?댁씡</span><span class="kpi-value" id="kpiTotalProfit">??0</span></div>
+                    </div>
+                </div>
+
+                <!-- Products Table Section -->
+                <section class="section-block" id="productsSection">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h2><i class='bx bx-receipt'></i> 留ㅼ엯?곹뭹 由ъ뒪??(?ㅻ쭏?몄뒪?좎뼱)</h2>
+                            <div class="header-actions">
+                                <div class="table-search-wrap">
+                                    <select id="skSearchField" class="search-field-select">
+                                        <option value="all">?듯빀寃??/option>
+                                        <option value="supplier">留ㅼ엯泥?/option>
+                                        <option value="brand">釉뚮옖??/option>
+                                        <option value="name">?곹뭹紐?/option>
+                                        <option value="color">而щ윭</option>
+                                        <option value="size">?ъ씠利?/option>
+                                    </select>
+                                    <div class="table-search-input">
+                                        <i class='bx bx-search'></i>
+                                        <input type="text" id="skSearchInput" placeholder="寃?됱뼱 ?낅젰...">
+                                    </div>
+                                </div>
+                                <button id="deleteSkBtn" class="btn-outline btn-outline-danger"><i class='bx bx-trash'></i> ?좏깮 ??젣</button>
+                                <button id="exportSkBtn" class="btn-outline btn-outline-success"><i class='bx bx-download'></i> ?묒?</button>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table" id="skTable">
+                                <thead>
+                                    <!-- Group header row -->
+                                    <tr>
+                                        <th rowspan="2" class="col-check"><input type="checkbox" id="selectAllSk"></th>
+                                        <th rowspan="2" class="sortable" data-sort="supplier">留ㅼ엯泥?<i class='bx bx-sort'></i></th>
+                                        <th rowspan="2" class="sortable" data-sort="brand">釉뚮옖??<i class='bx bx-sort'></i></th>
+                                        <th rowspan="2" class="sortable" data-sort="name">?곹뭹紐?<i class='bx bx-sort'></i></th>
+                                        <th rowspan="2" class="sortable" data-sort="color">而щ윭 <i class='bx bx-sort'></i></th>
+                                        <th rowspan="2" class="sortable" data-sort="size">?ъ씠利?<i class='bx bx-sort'></i></th>
+                                        <th rowspan="2" class="sortable" data-sort="uploadDate">?낅줈?쒖씪 <i class='bx bx-sort'></i></th>
+                                        <th colspan="4" class="th-group-label th-group-purchase">留ㅼ엯</th>
+                                        <th colspan="3" class="th-group-label th-group-sales">留ㅼ텧</th>
+                                        <th colspan="3" class="th-group-label th-group-settle">?뺤궛</th>
+                                        <th rowspan="2" class="col-action-sk">愿由?/th>
+                                    </tr>
+                                    <!-- Sub-header row -->
+                                    <tr id="skSortHeaders">
+                                        <th class="col-num-sm th-group-purchase sortable" data-sort="buyPrice">留ㅼ엯媛</th>
+                                        <th class="col-num-sm th-group-purchase sortable" data-sort="buyShipping">?댁엫</th>
+                                        <th class="th-group-purchase" style="font-size:10px">?댁엫湲곗?</th>
+                                        <th class="col-num-sm th-group-purchase sortable" data-sort="buyTotal">?⑷퀎</th>
+                                        <th class="col-num-sm th-group-sales sortable" data-sort="sellPrice">?먮ℓ媛</th>
+                                        <th class="col-num-sm th-group-sales sortable" data-sort="sellShipping">?댁엫</th>
+                                        <th class="col-num-sm th-group-sales sortable" data-sort="sellTotal">?⑷퀎</th>
+                                        <th class="col-num-sm th-group-settle sortable" data-sort="commission">?섏닔猷?/th>
+                                        <th class="col-num-sm th-group-settle sortable" data-sort="profit">?뺤궛?댁씡</th>
+                                        <th class="col-num-sm th-group-settle sortable" data-sort="profitRate">?섏씡瑜?/th>
+                                    </tr>
+                                </thead>
+                                <tbody id="skTableBody">
+                                    <tr class="loading-row"><td colspan="17"><div class="skeleton"></div></td></tr>
+                                    <tr class="loading-row"><td colspan="17"><div class="skeleton"></div></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="pagination" id="skPagination"></div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add/Edit Product Modal -->
+    <div id="skModal" class="modal">
+        <div class="modal-content" style="max-width:720px;">
+            <div class="modal-header">
+                <h2 id="skModalTitle">留ㅼ엯?곹뭹 ?깅줉</h2>
+                <button type="button" class="btn-close" id="closeSkModalBtn"><i class='bx bx-x'></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="skForm" autocomplete="off">
+                    <input type="hidden" id="skEditId">
+                    <div class="modal-form-grid">
+                        <!-- 湲곕낯 ?뺣낫 -->
+                        <div class="modal-section-title section-purchase fg-full">?벀 湲곕낯 ?뺣낫</div>
+                        <div class="fg">
+                            <label for="skSupplier">留ㅼ엯泥?/label>
+                            <input type="text" id="skSupplier" required placeholder="理쒓??좏넻">
+                        </div>
+                        <div class="fg">
+                            <label for="skBrand">釉뚮옖??/label>
+                            <input type="text" id="skBrand" required placeholder="K2 ?몄씠?꾪떚">
+                        </div>
+                        <div class="fg fg-full">
+                            <label for="skName">?곹뭹紐?/label>
+                            <input type="text" id="skName" required placeholder="?먯뼱?덈뱶踰좎뒪???좏뭾湲곗“??>
+                        </div>
+                        <div class="fg">
+                            <label for="skColor">而щ윭</label>
+                            <input type="text" id="skColor" required placeholder="釉붾옓">
+                        </div>
+                        <div class="fg">
+                            <label for="skSize">?ъ씠利?/label>
+                            <input type="text" id="skSize" required placeholder="FREE">
+                        </div>
+                        <div class="fg">
+                            <label for="skUploadDate">?ㅻ쭏?몄뒪?좎뼱 ?낅줈?쒖씪</label>
+                            <input type="date" id="skUploadDate">
+                        </div>
+
+                        <!-- 留ㅼ엯 ?뺣낫 -->
+                        <div class="modal-section-title section-purchase fg-full">?뮥 留ㅼ엯 ?뺣낫 <span class="vat-inline">VAT蹂꾨룄</span></div>
+                        <div class="fg">
+                            <label for="skBuyPrice">留ㅼ엯媛 (怨듦툒媛)</label>
+                            <input type="number" id="skBuyPrice" min="0" required placeholder="0">
+                        </div>
+                        <div class="fg">
+                            <label for="skBuyShipping">留ㅼ엯 ?댁엫</label>
+                            <input type="number" id="skBuyShipping" min="0" placeholder="0">
+                        </div>
+                        <div class="fg">
+                            <label for="skShippingBasis">?댁엫湲곗?</label>
+                            <select id="skShippingBasis">
+                                <option value="?섎웾蹂?>?섎웾蹂?/option>
+                                <option value="臾대즺">臾대즺</option>
+                                <option value="議곌굔遺">議곌굔遺</option>
+                                <option value="?좊즺">?좊즺</option>
+                            </select>
+                        </div>
+                        <div class="fg" id="shippingQtyGroup">
+                            <label for="skShippingQty">?섎웾蹂?湲곗? (紐?媛쒕떦)</label>
+                            <input type="number" id="skShippingQty" min="1" value="1" placeholder="1">
+                        </div>
+                        <div class="fg">
+                            <label>留ㅼ엯 ?⑷퀎 (?먮룞怨꾩궛)</label>
+                            <input type="text" id="skBuyTotal" class="calc-preview" readonly placeholder="?먮룞怨꾩궛">
+                        </div>
+
+                        <!-- 留ㅼ텧 ?뺣낫 -->
+                        <div class="modal-section-title section-sales fg-full">?썟 留ㅼ텧 ?뺣낫 <span class="vat-inline vat-included">VAT?ы븿</span></div>
+                        <div class="fg">
+                            <label for="skSellPrice">?먮ℓ媛 (?뚮퉬?먭?)</label>
+                            <input type="number" id="skSellPrice" min="0" required placeholder="0">
+                        </div>
+                        <div class="fg">
+                            <label for="skSellShipping">?먮ℓ ?댁엫 (諛곗넚鍮?</label>
+                            <input type="number" id="skSellShipping" min="0" placeholder="0">
+                        </div>
+                        <div class="fg">
+                            <label>留ㅼ텧 ?⑷퀎 (?먮룞怨꾩궛)</label>
+                            <input type="text" id="skSellTotal" class="calc-preview" readonly placeholder="?먮룞怨꾩궛">
+                        </div>
+
+                        <!-- ?뺤궛 ?뺣낫 (?먮룞怨꾩궛) -->
+                        <div class="modal-section-title section-settle fg-full">?뱤 ?뺤궛 誘몃━蹂닿린 (?먮룞怨꾩궛)</div>
+                        <div class="fg">
+                            <label>留ㅼ텧?섏닔猷?/label>
+                            <input type="text" id="skCommission" class="calc-preview" readonly placeholder="?먮룞怨꾩궛">
+                        </div>
+                        <div class="fg">
+                            <label>?뺤궛?댁씡</label>
+                            <input type="text" id="skProfit" class="calc-preview" readonly placeholder="?먮룞怨꾩궛">
+                        </div>
+                        <div class="fg">
+                            <label>?섏씡瑜?/label>
+                            <input type="text" id="skProfitRate" class="calc-preview" readonly placeholder="?먮룞怨꾩궛">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn-outline" id="cancelSkBtn">痍⑥냼</button>
+                        <button type="submit" class="btn-primary" id="saveSkBtn"><i class='bx bx-save'></i> ?깅줉</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="toastContainer" class="toast-container"></div>
+    <script type="module" src="seller-k-products.js"></script>
+</body>
+
+</html>
+
