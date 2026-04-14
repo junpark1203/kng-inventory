@@ -1,4 +1,4 @@
-﻿import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-analytics.js";
 import { 
     getFirestore, collection, doc, getDoc, setDoc, updateDoc, deleteDoc,
@@ -602,6 +602,14 @@ document.addEventListener("click", function(e) {
     closeAllLists(e.target);
 });
 
+var formHierarchy = [
+    {id: 'fSupplier', key: 'supplier'},
+    {id: 'fBrand', key: 'brand'},
+    {id: 'fName', key: 'name'},
+    {id: 'fColor', key: 'color'},
+    {id: 'fSize', key: 'size'}
+];
+
 function attachGenericAutocomplete(inputId, fieldKey) {
     var inputEl = document.getElementById(inputId);
     if (!inputEl) return;
@@ -615,9 +623,33 @@ function attachGenericAutocomplete(inputId, fieldKey) {
         a.setAttribute("class", "autocomplete-items");
         inputEl.parentNode.appendChild(a);
         
+        var filterConditions = [];
+        var currentIndex = formHierarchy.findIndex(function(item) { return item.id === inputId; });
+        if (currentIndex > 0) {
+            for (var i = 0; i < currentIndex; i++) {
+                var prevId = formHierarchy[i].id;
+                var prevKey = formHierarchy[i].key;
+                var prevVal = document.getElementById(prevId).value.trim();
+                if (prevVal) {
+                    filterConditions.push({ key: prevKey, val: prevVal });
+                }
+            }
+        }
+        
         var seen = {};
         var uniqueValues = [];
         products.forEach(function(p) {
+            var isMatch = true;
+            for (var i = 0; i < filterConditions.length; i++) {
+                var cond = filterConditions[i];
+                var pVal = cond.key === 'supplier' ? (p.supplier || '최가유통') : p[cond.key];
+                if ((pVal || '') !== cond.val) {
+                    isMatch = false;
+                    break;
+                }
+            }
+            if (!isMatch) return;
+            
             var v = fieldKey === 'supplier' ? (p.supplier || '최가유통') : p[fieldKey];
             if (v && !seen[v]) { seen[v] = true; uniqueValues.push(v); }
         });
@@ -639,6 +671,12 @@ function attachGenericAutocomplete(inputId, fieldKey) {
                 b.appendChild(hiddenInput);
                 b.addEventListener("click", function() {
                     inputEl.value = this.getElementsByTagName("input")[0].value;
+                    var cIdx = formHierarchy.findIndex(function(item) { return item.id === inputId; });
+                    if (cIdx !== -1) {
+                        for(var idx = cIdx + 1; idx < formHierarchy.length; idx++) {
+                            document.getElementById(formHierarchy[idx].id).value = '';
+                        }
+                    }
                     closeAllLists();
                 });
                 a.appendChild(b);
@@ -648,7 +686,15 @@ function attachGenericAutocomplete(inputId, fieldKey) {
         if (count === 0) a.parentNode.removeChild(a);
     }
 
-    inputEl.addEventListener("input", function() { showItems(this.value); });
+    inputEl.addEventListener("input", function() { 
+        showItems(this.value); 
+        var cIdx = formHierarchy.findIndex(function(item) { return item.id === inputId; });
+        if (cIdx !== -1) {
+            for(var idx = cIdx + 1; idx < formHierarchy.length; idx++) {
+                document.getElementById(formHierarchy[idx].id).value = '';
+            }
+        }
+    });
     
     inputEl.addEventListener("focus", function() {
         if(this.readOnly) return; 
