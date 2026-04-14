@@ -160,11 +160,18 @@
                                             placeholder="0"><label class="vat-chip"><input type="checkbox"
                                                 id="txFreightVat" checked><span>VAT별도</span></label></div>
                                 </div>
-                                <div class="fg"><label id="lblTxPrice" for="txPrice">매입단가 (₩)</label><div class="input-vat-group"><input
-                                        type="number" id="txPrice" min="0" required placeholder="자동계산" readonly
-                                        class="readonly-input"><label class="vat-chip vat-chip-red hidden" id="sellVatChipWrap"><input type="checkbox" id="txSellVat" checked><span>VAT포함</span></label></div></div>
-                                <div class="fg hidden" id="outBuyPriceCol"><label for="outBuyPrice">매입단가</label><input type="number" id="outBuyPrice" readonly class="readonly-input" placeholder="상품 선택 시 자동표시"></div>
-                                <div class="fg hidden" id="outMarginCol"><label for="outMarginRate">마진율</label><input type="text" id="outMarginRate" readonly class="readonly-input" placeholder="-"></div>
+                                <div class="fg"><label id="lblTxPrice" for="txPrice">매입단가 (₩)</label>
+                                    <div class="input-vat-group"><input type="number" id="txPrice" min="0" required
+                                            placeholder="자동계산" readonly class="readonly-input"><label
+                                            class="vat-chip hidden" id="sellVatChipWrap"><input type="checkbox"
+                                                id="txSellVat" checked><span>VAT포함</span></label></div>
+                                </div>
+                                <div class="fg hidden" id="outBuyPriceCol"><label for="outBuyPrice">매입단가</label><input
+                                        type="number" id="outBuyPrice" readonly class="readonly-input"
+                                        placeholder="상품 선택 시 자동표시"></div>
+                                <div class="fg hidden" id="outMarginCol"><label for="outMarginRate">마진율</label><input
+                                        type="text" id="outMarginRate" readonly class="readonly-input" placeholder="-">
+                                </div>
                             </div>
                             <div class="form-row fr-row4">
                                 <div class="fg"><label for="txRemarks">비고</label><input type="text" id="txRemarks"
