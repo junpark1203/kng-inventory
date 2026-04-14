@@ -595,6 +595,19 @@ body {
     color: var(--primary);
 }
 
+.vat-chip.vat-chip-red input[type="checkbox"] {
+    accent-color: var(--danger);
+}
+
+.vat-chip.vat-chip-red:has(input:checked) {
+    background: var(--danger-muted);
+    border-color: var(--danger);
+}
+
+.vat-chip.vat-chip-red:has(input:checked) span {
+    color: var(--danger);
+}
+
 /* Submit button */
 .fg-action {
     display: flex;
