@@ -1210,3 +1210,117 @@ input:focus, select:focus {
 
 /* Legacy compat aliases */
 .modern-table { /* alias for data-table compat in JS */ }
+
+/* ????????????????????????????????????????
+   LOGIN OVERLAY
+   ???????????????????????????????????????? */
+.login-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #f4f6f8; /* Light gray background matching ERP theme */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+}
+
+.login-overlay.hidden {
+    display: none !important;
+}
+
+.login-box {
+    background: var(--surface);
+    padding: 40px;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    width: 100%;
+    max-width: 400px;
+    border: 1px solid var(--border);
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.login-logo {
+    height: 48px;
+    margin-bottom: 15px;
+}
+
+.login-header h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin-bottom: 5px;
+}
+
+.login-header p {
+    font-size: 13px;
+    color: var(--gray-500);
+}
+
+.input-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-icon i {
+    position: absolute;
+    left: 12px;
+    color: var(--gray-400);
+    font-size: 16px;
+}
+
+.input-icon input {
+    padding-left: 36px;
+    height: 40px; /* Slightly taller for login */
+    font-size: 14px;
+}
+
+.login-error {
+    margin-top: 15px;
+    color: var(--danger);
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+    background: var(--danger-muted);
+    padding: 8px;
+    border-radius: 4px;
+}
+
+.login-error.hidden {
+    display: none;
+}
+
+/* Sidebar Logout */
+.logout-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--gray-400);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 10px 15px;
+    margin-bottom: 10px;
+    border-radius: 6px;
+    transition: all var(--transition-fast);
+}
+
+.logout-btn i {
+    font-size: 18px;
+    color: var(--gray-500);
+}
+
+.logout-btn:hover {
+    background: var(--gray-800);
+    color: #fff;
+}
+.logout-btn:hover i {
+    color: var(--danger);
+}

@@ -1,9 +1,10 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
+﻿import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-analytics.js";
 import { 
     getFirestore, collection, doc, getDoc, setDoc, updateDoc, deleteDoc,
     onSnapshot, runTransaction, writeBatch, query 
 } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
 
 // Firebase 설정
 const firebaseConfig = {
@@ -19,6 +20,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
 // ==========================================
 // Firestore 보안 경고
@@ -1034,11 +1036,71 @@ function closeMobileMenu() {
 }
 
 // ==========================================
+// 로그인 및 Auth 상태 추적
+// ==========================================
+function setupAuth() {
+    var loginOverlay = document.getElementById('loginOverlay');
+    var mainApp = document.getElementById('mainApp');
+    var loginForm = document.getElementById('loginForm');
+    var loginError = document.getElementById('loginError');
+    var logoutBtn = document.getElementById('logoutBtn');
+    
+    // Auth Listener
+    onAuthStateChanged(auth, function(user) {
+        if (user) {
+            // Logged in
+            if (loginOverlay) loginOverlay.classList.add('hidden');
+            if (mainApp) mainApp.classList.remove('hidden');
+            initFirebase(); // Initialize bindings ONLY after login
+        } else {
+            // Logged out
+            if (loginOverlay) loginOverlay.classList.remove('hidden');
+            if (mainApp) mainApp.classList.add('hidden');
+        }
+    });
+
+    if (loginForm) {
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var btn = document.getElementById('loginBtn');
+            var origText = btn.innerHTML;
+            btn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> 로그인 중...";
+            btn.disabled = true;
+            loginError.classList.add('hidden');
+
+            var email = document.getElementById('loginEmail').value;
+            var pass = document.getElementById('loginPassword').value;
+
+            signInWithEmailAndPassword(auth, email, pass)
+                .then(function() {
+                    btn.innerHTML = origText;
+                    btn.disabled = false;
+                })
+                .catch(function(err) {
+                    btn.innerHTML = origText;
+                    btn.disabled = false;
+                    loginError.textContent = "아이디 또는 비밀번호가 틀렸습니다.";
+                    loginError.classList.remove('hidden');
+                });
+        });
+    }
+
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            signOut(auth).then(function() {
+                location.reload();
+            });
+        });
+    }
+}
+
+// ==========================================
 // 앱 시작
 // ==========================================
 document.addEventListener('DOMContentLoaded', function() {
     setTodayDate();
-    initFirebase();
+    setupAuth();
 
     // 부가세 토글 (페이지 새로고침 없이)
     var globalVatBtn = document.getElementById('globalVatBtn');
