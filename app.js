@@ -310,14 +310,51 @@ function renderTable(searchTerm) {
     tbody.innerHTML = '';
     
     var filtered = products;
+    // 글로벌 검색 (상단 검색바)
     if (searchTerm) {
         var term = searchTerm.toLowerCase();
-        filtered = products.filter(function(p) {
+        filtered = filtered.filter(function(p) {
             return p.name.toLowerCase().includes(term) || 
                 p.color.toLowerCase().includes(term) ||
                 p.brand.toLowerCase().includes(term) ||
                 (p.supplier && p.supplier.toLowerCase().includes(term));
         });
+    }
+    
+    // 재고 테이블 내 필드별 검색
+    var invSearchEl = document.getElementById('invSearchInput');
+    var invFieldEl = document.getElementById('invSearchField');
+    if (invSearchEl && invFieldEl) {
+        var invTerm = invSearchEl.value.trim().toLowerCase();
+        var invField = invFieldEl.value;
+        if (invTerm) {
+            filtered = filtered.filter(function(p) {
+                if (invField === 'all') {
+                    return (p.supplier || '최가유통').toLowerCase().includes(invTerm) ||
+                        p.brand.toLowerCase().includes(invTerm) ||
+                        p.name.toLowerCase().includes(invTerm) ||
+                        p.color.toLowerCase().includes(invTerm) ||
+                        p.size.toLowerCase().includes(invTerm) ||
+                        String(p.buyPrice).includes(invTerm) ||
+                        String(p.stock).includes(invTerm);
+                } else if (invField === 'supplier') {
+                    return (p.supplier || '최가유통').toLowerCase().includes(invTerm);
+                } else if (invField === 'brand') {
+                    return p.brand.toLowerCase().includes(invTerm);
+                } else if (invField === 'name') {
+                    return p.name.toLowerCase().includes(invTerm);
+                } else if (invField === 'color') {
+                    return p.color.toLowerCase().includes(invTerm);
+                } else if (invField === 'size') {
+                    return p.size.toLowerCase().includes(invTerm);
+                } else if (invField === 'buyPrice') {
+                    return String(p.buyPrice).includes(invTerm);
+                } else if (invField === 'stock') {
+                    return String(p.stock).includes(invTerm);
+                }
+                return true;
+            });
+        }
     }
 
     filtered.sort(function(a, b) {
@@ -379,7 +416,55 @@ function renderTransactionsTable() {
     var tbody = document.getElementById('transactionTableBody');
     tbody.innerHTML = '';
 
-    var sortedTx = transactions.slice().sort(function(a, b) {
+    // 입출고 내역 테이블 내 필드별 검색
+    var filteredTx = transactions;
+    var txSearchEl = document.getElementById('txSearchInput');
+    var txFieldEl = document.getElementById('txSearchField');
+    if (txSearchEl && txFieldEl) {
+        var txTerm = txSearchEl.value.trim().toLowerCase();
+        var txField = txFieldEl.value;
+        if (txTerm) {
+            filteredTx = filteredTx.filter(function(t) {
+                if (txField === 'all') {
+                    var dateStr = t.txDate || (t.timestamp ? t.timestamp.split('T')[0] : '');
+                    var typeLabel = t.type === 'IN' ? '매입' : '출고';
+                    return dateStr.includes(txTerm) ||
+                        typeLabel.includes(txTerm) ||
+                        t.type.toLowerCase().includes(txTerm) ||
+                        (t.supplier || '').toLowerCase().includes(txTerm) ||
+                        (t.productName || '').toLowerCase().includes(txTerm) ||
+                        (t.brand || '').toLowerCase().includes(txTerm) ||
+                        (t.color || '').toLowerCase().includes(txTerm) ||
+                        (t.size || '').toLowerCase().includes(txTerm) ||
+                        String(t.qty).includes(txTerm) ||
+                        String(t.price).includes(txTerm) ||
+                        (t.remarks || '').toLowerCase().includes(txTerm);
+                } else if (txField === 'timestamp') {
+                    var dateStr = t.txDate || (t.timestamp ? t.timestamp.split('T')[0] : '');
+                    return dateStr.includes(txTerm);
+                } else if (txField === 'type') {
+                    var typeLabel = t.type === 'IN' ? '매입' : '출고';
+                    return typeLabel.includes(txTerm) || t.type.toLowerCase().includes(txTerm);
+                } else if (txField === 'supplier') {
+                    return (t.supplier || '').toLowerCase().includes(txTerm);
+                } else if (txField === 'productName') {
+                    return (t.productName || '').toLowerCase().includes(txTerm) ||
+                        (t.brand || '').toLowerCase().includes(txTerm) ||
+                        (t.color || '').toLowerCase().includes(txTerm) ||
+                        (t.size || '').toLowerCase().includes(txTerm);
+                } else if (txField === 'qty') {
+                    return String(t.qty).includes(txTerm);
+                } else if (txField === 'price') {
+                    return String(t.price).includes(txTerm);
+                } else if (txField === 'remarks') {
+                    return (t.remarks || '').toLowerCase().includes(txTerm);
+                }
+                return true;
+            });
+        }
+    }
+
+    var sortedTx = filteredTx.slice().sort(function(a, b) {
         var valA = a[txSort.col] || '';
         var valB = b[txSort.col] || '';
         
@@ -1425,8 +1510,8 @@ function updateETxPrice() {
     var f = parseInt(document.getElementById('eFreight').value, 10) || 0;
     var bv = document.getElementById('eBaseVat').checked;
     var fv = document.getElementById('eFreightVat').checked;
-    var finalB = bv ? b : Math.round(b * 1.1);
-    var finalF = fv ? f : Math.round(f * 1.1);
+    var finalB = bv ? b : Math.round(b / 1.1);
+    var finalF = fv ? f : Math.round(f / 1.1);
     document.getElementById('ePrice').value = finalB + finalF;
 }
 
