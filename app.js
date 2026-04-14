@@ -1462,6 +1462,9 @@ document.getElementById('txEditForm').addEventListener('submit', async function(
     
     try {
         await runTransaction(db, async function(transaction) {
+            // ============================
+            // PHASE 1: ALL READS FIRST
+            // ============================
             var txRef = doc(db, 'kng_transactions', txId);
             var txSnap = await transaction.get(txRef);
             if (!txSnap.exists()) throw "트랜잭션을 찾을 수 없습니다.";
@@ -1470,7 +1473,47 @@ document.getElementById('txEditForm').addEventListener('submit', async function(
             var metricsSnap = await transaction.get(metricsRef);
             var metricsData = metricsSnap.exists() ? metricsSnap.data() : { totalRevenue: 0, totalCost: 0 };
             
-            // 1. REVERT old transaction
+            var oldProdRef = doc(db, 'kng_products', origTx.productId);
+            var oldProdSnap = await transaction.get(oldProdRef);
+            
+            // Determine new product and pre-read it
+            var targetProd = null;
+            var newProductId = origTx.productId;
+            var newProdRef = null;
+            var newProdSnap = null;
+            var buyPriceForLog = null;
+            var newProdName = fName;
+            var isNewProduct = false;
+            
+            if (type === 'OUT') {
+                targetProd = products.find(function(p) { return p.brand === fBrand && p.name === fName && p.color === fColor && p.size === fSize; });
+                if (!targetProd) throw "변경된 정보와 일치하는 상품이 없습니다.";
+                newProductId = targetProd.id;
+                newProdName = targetProd.name;
+                buyPriceForLog = targetProd.buyPrice;
+                
+                if (newProductId !== origTx.productId) {
+                    newProdRef = doc(db, 'kng_products', newProductId);
+                    newProdSnap = await transaction.get(newProdRef);
+                }
+            } else {
+                targetProd = products.find(function(p) { return p.brand === fBrand && p.name === fName && p.color === fColor && p.size === fSize && p.supplier === fSupplier; });
+                if (targetProd) {
+                    newProductId = targetProd.id;
+                    if (newProductId !== origTx.productId) {
+                        newProdRef = doc(db, 'kng_products', newProductId);
+                        newProdSnap = await transaction.get(newProdRef);
+                    }
+                } else {
+                    isNewProduct = true;
+                }
+            }
+            
+            // ============================
+            // PHASE 2: ALL WRITES AFTER
+            // ============================
+            
+            // 1. REVERT old transaction metrics
             var revertRevenue = 0;
             var revertCost = 0;
             if (type === 'OUT') {
@@ -1479,8 +1522,7 @@ document.getElementById('txEditForm').addEventListener('submit', async function(
                 revertCost = origTx.qty * origTx.price;
             }
             
-            var oldProdRef = doc(db, 'kng_products', origTx.productId);
-            var oldProdSnap = await transaction.get(oldProdRef);
+            // Revert old product stock
             var newOldStock = 0;
             if (oldProdSnap.exists()) {
                 var oldProdData = oldProdSnap.data();
@@ -1491,40 +1533,31 @@ document.getElementById('txEditForm').addEventListener('submit', async function(
             // 2. APPLY new transaction
             var applyRevenue = 0;
             var applyCost = 0;
-            var newProductId = origTx.productId;
-            var newProdName = fName;
-            var buyPriceForLog = null;
             
             if (type === 'OUT') {
                 applyRevenue = newQty * newPrice;
-                // find product matching new criteria
-                var targetProd = products.find(function(p) { return p.brand === fBrand && p.name === fName && p.color === fColor && p.size === fSize; });
-                if (!targetProd) throw "변경된 정보와 일치하는 상품이 없습니다.";
-                newProductId = targetProd.id;
-                newProdName = targetProd.name;
-                buyPriceForLog = targetProd.buyPrice;
                 
-                var newProdRef = doc(db, 'kng_products', newProductId);
-                var newProdSnap = await transaction.get(newProdRef);
-                var updatedStock = 0;
-                if(newProdSnap.exists()) {
-                    var npData = newProdSnap.data();
-                    updatedStock = (newProductId === origTx.productId) ? (newOldStock - newQty) : (npData.stock - newQty);
+                // Use oldProdSnap if same product, otherwise use newProdSnap
+                var prodSnapToUse = (newProductId === origTx.productId) ? oldProdSnap : newProdSnap;
+                var prodRefToUse = (newProductId === origTx.productId) ? oldProdRef : newProdRef;
+                
+                if (prodSnapToUse && prodSnapToUse.exists()) {
+                    var npData = prodSnapToUse.data();
+                    var updatedStock = (newProductId === origTx.productId) ? (newOldStock - newQty) : (npData.stock - newQty);
                     if (updatedStock < 0) throw "출고 수량이 재고 수량을 초과합니다.";
-                    transaction.update(newProdRef, { stock: updatedStock, sellPrice: newPrice });
+                    transaction.update(prodRefToUse, { stock: updatedStock, sellPrice: newPrice });
                 }
             } else {
                 applyCost = newQty * newPrice;
-                var targetProd = products.find(function(p) { return p.brand === fBrand && p.name === fName && p.color === fColor && p.size === fSize && p.supplier === fSupplier; });
                 
-                if (targetProd) {
-                    newProductId = targetProd.id;
-                    var newProdRef = doc(db, 'kng_products', newProductId);
-                    var newProdSnap = await transaction.get(newProdRef);
-                    if(newProdSnap.exists()) {
-                        var npData = newProdSnap.data();
+                if (!isNewProduct) {
+                    var prodSnapToUse = (newProductId === origTx.productId) ? oldProdSnap : newProdSnap;
+                    var prodRefToUse = (newProductId === origTx.productId) ? oldProdRef : newProdRef;
+                    
+                    if (prodSnapToUse && prodSnapToUse.exists()) {
+                        var npData = prodSnapToUse.data();
                         var updatedStock = (newProductId === origTx.productId) ? (newOldStock + newQty) : (npData.stock + newQty);
-                        transaction.update(newProdRef, { stock: updatedStock, buyPrice: newPrice });
+                        transaction.update(prodRefToUse, { stock: updatedStock, buyPrice: newPrice });
                     }
                 } else {
                     var freshRef = doc(collection(db, 'kng_products'));
