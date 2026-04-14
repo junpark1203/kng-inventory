@@ -1441,6 +1441,16 @@ document.addEventListener('DOMContentLoaded', function() {
     if (sidebarOverlay) {
         sidebarOverlay.addEventListener('click', closeMobileMenu);
     }
+
+    // 셀러K 아코디언 메뉴 토글
+    var sellerKToggle = document.getElementById('sellerKToggle');
+    var sellerKGroup = document.getElementById('sellerKMenuGroup');
+    if (sellerKToggle && sellerKGroup) {
+        sellerKToggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            sellerKGroup.classList.toggle('open');
+        });
+    }
 });
 
 // ==========================================
