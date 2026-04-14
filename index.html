@@ -43,6 +43,7 @@
         </div>
     </div>
 
+    <!-- 메인 앱 (초기에는 숨김) -->
     <div class="app-container hidden" id="mainApp">
         <div class="sidebar-overlay" id="sidebarOverlay"></div>
         <aside class="sidebar" id="sidebar">
@@ -91,6 +92,7 @@
                         <div class="kpi-data"><span class="kpi-label">총 매입 (비용 누적)</span><span class="kpi-value" id="totalCost">₩ 0</span></div>
                     </div>
                 </div>
+                <!-- Forms Section -->
                 <section class="section-block" id="forms">
                     <div class="panel">
                         <div class="panel-header">
@@ -133,6 +135,7 @@
                         </form>
                     </div>
                 </section>
+                <!-- Inventory Section -->
                 <section class="section-block" id="inventory">
                     <div class="panel">
                         <div class="panel-header">
@@ -144,13 +147,18 @@
                         </div>
                         <div class="table-responsive">
                             <table class="data-table">
-                                <thead><tr>
+                                <thead><tr id="invSortHeaders">
                                     <th class="col-check"><input type="checkbox" id="selectAllInv"></th>
-                                    <th>공급사</th><th>브랜드</th><th>상품명</th><th>컬러</th><th>사이즈</th>
-                                    <th class="col-num">매입 단가</th><th class="col-num">현재 재고</th><th class="col-action">관리</th>
+                                    <th class="sortable" data-sort="supplier">공급사 <i class='bx bx-sort'></i></th>
+                                    <th class="sortable" data-sort="brand">브랜드 <i class='bx bx-sort'></i></th>
+                                    <th class="sortable" data-sort="name">상품명 <i class='bx bx-sort'></i></th>
+                                    <th class="sortable" data-sort="color">컬러 <i class='bx bx-sort'></i></th>
+                                    <th class="sortable" data-sort="size">사이즈 <i class='bx bx-sort'></i></th>
+                                    <th class="col-num sortable" data-sort="buyPrice">매입 단가 <i class='bx bx-sort'></i></th>
+                                    <th class="col-num sortable" data-sort="stock">현재 재고 <i class='bx bx-sort'></i></th>
+                                    <th class="col-action">관리</th>
                                 </tr></thead>
                                 <tbody id="inventoryTableBody">
-                                    <tr class="loading-row"><td colspan="9"><div class="skeleton"></div></td></tr>
                                     <tr class="loading-row"><td colspan="9"><div class="skeleton"></div></td></tr>
                                     <tr class="loading-row"><td colspan="9"><div class="skeleton"></div></td></tr>
                                 </tbody>
@@ -159,6 +167,7 @@
                         <div class="pagination" id="invPagination"></div>
                     </div>
                 </section>
+                <!-- Transactions Section -->
                 <section class="section-block" id="transactions">
                     <div class="panel">
                         <div class="panel-header">
@@ -170,13 +179,18 @@
                         </div>
                         <div class="table-responsive">
                             <table class="data-table">
-                                <thead><tr>
+                                <thead><tr id="txSortHeaders">
                                     <th class="col-check"><input type="checkbox" id="selectAllTx"></th>
-                                    <th>일시</th><th>구분</th><th>공급사</th><th>상품명/내역</th>
-                                    <th class="col-num">수량</th><th class="col-num">단가</th><th class="col-num">마진율</th><th>비고</th>
+                                    <th class="sortable" data-sort="timestamp">일시 <i class='bx bx-sort'></i></th>
+                                    <th class="sortable" data-sort="type">구분 <i class='bx bx-sort'></i></th>
+                                    <th class="sortable" data-sort="supplier">공급사 <i class='bx bx-sort'></i></th>
+                                    <th class="sortable" data-sort="name">상품명/내역 <i class='bx bx-sort'></i></th>
+                                    <th class="col-num sortable" data-sort="qty">수량 <i class='bx bx-sort'></i></th>
+                                    <th class="col-num sortable" data-sort="price">단가 <i class='bx bx-sort'></i></th>
+                                    <th class="col-num sortable" data-sort="margin">마진율 <i class='bx bx-sort'></i></th>
+                                    <th>비고</th>
                                 </tr></thead>
                                 <tbody id="transactionTableBody">
-                                    <tr class="loading-row"><td colspan="9"><div class="skeleton"></div></td></tr>
                                     <tr class="loading-row"><td colspan="9"><div class="skeleton"></div></td></tr>
                                     <tr class="loading-row"><td colspan="9"><div class="skeleton"></div></td></tr>
                                 </tbody>
@@ -189,9 +203,7 @@
         </main>
     </div>
 
-    <!-- Toast Container -->
     <div id="toastContainer" class="toast-container"></div>
-
     <script type="module" src="app.js"></script>
 </body>
 </html>
