@@ -1357,3 +1357,66 @@ th.sortable.active i {
 th.sortable.active.asc i {
     transform: rotate(180deg);
 }
+
+/* ????????????????????????????????????????
+   TABLE SEARCH BAR
+   ???????????????????????????????????????? */
+.table-search-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--surface);
+    height: 30px;
+}
+
+.search-field-select {
+    height: 100%;
+    padding: 0 8px;
+    border: none;
+    border-right: 1px solid var(--border);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--gray-600);
+    background: var(--gray-50);
+    cursor: pointer;
+    outline: none;
+    min-width: 80px;
+}
+
+.search-field-select:focus {
+    background: var(--primary-muted);
+    color: var(--primary);
+}
+
+.table-search-input {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 8px;
+    flex: 1;
+    min-width: 0;
+}
+
+.table-search-input i {
+    font-size: 14px;
+    color: var(--gray-400);
+    flex-shrink: 0;
+}
+
+.table-search-input input {
+    border: none;
+    outline: none;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--gray-800);
+    background: transparent;
+    width: 140px;
+    min-width: 0;
+}
+
+.table-search-input input::placeholder {
+    color: var(--gray-400);
+}

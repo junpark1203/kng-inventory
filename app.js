@@ -1132,6 +1132,24 @@ document.addEventListener('DOMContentLoaded', function() {
     setTodayDate();
     setupAuth();
 
+    // 테이블 검색 이벤트
+    var invSearchInput = document.getElementById('invSearchInput');
+    var invSearchField = document.getElementById('invSearchField');
+    if (invSearchInput) {
+        invSearchInput.addEventListener('input', function() { invPage = 1; renderTable(); });
+    }
+    if (invSearchField) {
+        invSearchField.addEventListener('change', function() { invPage = 1; renderTable(); });
+    }
+    var txSearchInput = document.getElementById('txSearchInput');
+    var txSearchField = document.getElementById('txSearchField');
+    if (txSearchInput) {
+        txSearchInput.addEventListener('input', function() { txPage = 1; renderTransactionsTable(); });
+    }
+    if (txSearchField) {
+        txSearchField.addEventListener('change', function() { txPage = 1; renderTransactionsTable(); });
+    }
+
     // 테이블 정렬 이벤트
     document.querySelectorAll('#invSortHeaders .sortable').forEach(function(th) {
         th.addEventListener('click', function() {
