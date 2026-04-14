@@ -1407,22 +1407,26 @@ document.addEventListener('DOMContentLoaded', function() {
     // 사이드바 네비게이션
     document.querySelectorAll('.menu a').forEach(function(link) {
         link.addEventListener('click', function(e) {
-            e.preventDefault();
             var href = link.getAttribute('href');
             
-            document.querySelectorAll('.menu a').forEach(function(a) { a.classList.remove('active'); });
-            link.classList.add('active');
-            
-            if (href === '#dashboard') {
-                document.querySelector('.main-content').scrollTo({ top: 0, behavior: 'smooth' });
-            } else {
-                var section = document.querySelector(href);
-                if (section) {
-                    section.scrollIntoView({ behavior: 'smooth' });
+            // 페이지 내 앵커 이동(#)일 때만 기본 동작(페이지 리로드/이동)을 막고 스크롤 처리
+            if (href && href.startsWith('#')) {
+                e.preventDefault();
+                
+                document.querySelectorAll('.menu a').forEach(function(a) { a.classList.remove('active'); });
+                link.classList.add('active');
+                
+                if (href === '#dashboard') {
+                    document.querySelector('.main-content').scrollTo({ top: 0, behavior: 'smooth' });
+                } else {
+                    var section = document.querySelector(href);
+                    if (section) {
+                        section.scrollIntoView({ behavior: 'smooth' });
+                    }
                 }
+                
+                closeMobileMenu();
             }
-            
-            closeMobileMenu();
         });
     });
 
