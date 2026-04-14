@@ -131,6 +131,8 @@ var viewWithVat = localStorage.getItem('viewWithVat') === 'true';
 var invPage = 1;
 var txPage = 1;
 var PER_PAGE = 20;
+var invSort = { col: 'id', asc: true };
+var txSort = { col: 'timestamp', asc: false };
 
 // ==========================================
 // Firebase 초기화 (실시간 구독)
@@ -318,6 +320,17 @@ function renderTable(searchTerm) {
         });
     }
 
+    filtered.sort(function(a, b) {
+        var valA = a[invSort.col] || '';
+        var valB = b[invSort.col] || '';
+        if (typeof valA === 'string') valA = valA.toLowerCase();
+        if (typeof valB === 'string') valB = valB.toLowerCase();
+        
+        if (valA < valB) return invSort.asc ? -1 : 1;
+        if (valA > valB) return invSort.asc ? 1 : -1;
+        return 0;
+    });
+
     var total = filtered.length;
     var totalPages = Math.ceil(total / PER_PAGE);
     if (invPage > totalPages) invPage = Math.max(1, totalPages);
@@ -366,11 +379,28 @@ function renderTransactionsTable() {
     var tbody = document.getElementById('transactionTableBody');
     tbody.innerHTML = '';
 
-    var total = transactions.length;
+    var sortedTx = transactions.slice().sort(function(a, b) {
+        var valA = a[txSort.col] || '';
+        var valB = b[txSort.col] || '';
+        
+        if (txSort.col === 'timestamp' || txSort.col === 'date') {
+             valA = new Date(valA).getTime() || 0;
+             valB = new Date(valB).getTime() || 0;
+        } else if (typeof valA === 'string') {
+             valA = valA.toLowerCase();
+             valB = valB.toLowerCase();
+        }
+        
+        if (valA < valB) return txSort.asc ? -1 : 1;
+        if (valA > valB) return txSort.asc ? 1 : -1;
+        return 0;
+    });
+
+    var total = sortedTx.length;
     var totalPages = Math.ceil(total / PER_PAGE);
     if (txPage > totalPages) txPage = Math.max(1, totalPages);
     var start = (txPage - 1) * PER_PAGE;
-    var paged = transactions.slice(start, start + PER_PAGE);
+    var paged = sortedTx.slice(start, start + PER_PAGE);
     
     paged.forEach(function(t) {
         var tr = document.createElement('tr');
@@ -1101,6 +1131,47 @@ function setupAuth() {
 document.addEventListener('DOMContentLoaded', function() {
     setTodayDate();
     setupAuth();
+
+    // 테이블 정렬 이벤트
+    document.querySelectorAll('#invSortHeaders .sortable').forEach(function(th) {
+        th.addEventListener('click', function() {
+            var col = th.getAttribute('data-sort');
+            if (invSort.col === col) {
+                invSort.asc = !invSort.asc;
+            } else {
+                invSort.col = col;
+                invSort.asc = true;
+            }
+            document.querySelectorAll('#invSortHeaders .sortable').forEach(function(el) {
+                el.classList.remove('active', 'asc');
+                el.querySelector('i').className = 'bx bx-sort';
+            });
+            th.classList.add('active');
+            if (invSort.asc) th.classList.add('asc');
+            th.querySelector('i').className = invSort.asc ? 'bx bx-sort-up' : 'bx bx-sort-down';
+            renderTable(document.getElementById('searchInput').value);
+        });
+    });
+
+    document.querySelectorAll('#txSortHeaders .sortable').forEach(function(th) {
+        th.addEventListener('click', function() {
+            var col = th.getAttribute('data-sort');
+            if (txSort.col === col) {
+                txSort.asc = !txSort.asc;
+            } else {
+                txSort.col = col;
+                txSort.asc = true;
+            }
+            document.querySelectorAll('#txSortHeaders .sortable').forEach(function(el) {
+                el.classList.remove('active', 'asc');
+                el.querySelector('i').className = 'bx bx-sort';
+            });
+            th.classList.add('active');
+            if (txSort.asc) th.classList.add('asc');
+            th.querySelector('i').className = txSort.asc ? 'bx bx-sort-up' : 'bx bx-sort-down';
+            renderTransactionsTable();
+        });
+    });
 
     // 부가세 토글 (페이지 새로고침 없이)
     var globalVatBtn = document.getElementById('globalVatBtn');

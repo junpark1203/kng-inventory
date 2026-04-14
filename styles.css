@@ -1324,3 +1324,36 @@ input:focus, select:focus {
 .logout-btn:hover i {
     color: var(--danger);
 }
+
+/* ????????????????????????????????????????
+   TABLE SORTING
+   ???????????????????????????????????????? */
+th.sortable {
+    cursor: pointer;
+    user-select: none;
+    transition: background-color var(--transition-fast);
+}
+
+th.sortable:hover {
+    background-color: var(--gray-200);
+}
+
+th.sortable i {
+    font-size: 14px;
+    margin-left: 4px;
+    color: var(--gray-400);
+    transition: transform var(--transition-fast), color var(--transition-fast);
+}
+
+th.sortable.active {
+    background-color: var(--primary-muted);
+    color: var(--primary);
+}
+
+th.sortable.active i {
+    color: var(--primary);
+}
+
+th.sortable.active.asc i {
+    transform: rotate(180deg);
+}
