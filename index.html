@@ -5,20 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="K&G 실시간 재고 관리 시스템 - 매입/매출 관리, 재고 추적, 입출고 내역 관리">
     <title>K&G 실시간 재고 관리 시스템</title>
-    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Icons -->
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="app-container">
-        <!-- Mobile Overlay -->
         <div class="sidebar-overlay" id="sidebarOverlay"></div>
-
-        <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <div class="brand">
                 <img src="libraries/logo/20251208 KNG Logo_ENG.png" alt="K&G Logo" class="brand-logo">
@@ -36,45 +31,132 @@
                 </div>
             </div>
         </aside>
-
-        <!-- Main Content -->
         <main class="main-content">
             <header class="topbar">
                 <div class="topbar-left">
-                    <button class="hamburger-btn" id="hamburgerBtn" aria-label="메뉴 열기">
-                        <i class='bx bx-menu'></i>
-                    </button>
+                    <button class="hamburger-btn" id="hamburgerBtn" aria-label="메뉴 열기"><i class='bx bx-menu'></i></button>
                     <div class="search-wrap">
                         <i class='bx bx-search'></i>
                         <input type="text" id="searchInput" placeholder="상품명, 바코드, 공급사 검색...">
                     </div>
                 </div>
                 <div class="topbar-right">
-                    <button id="globalVatBtn" class="vat-toggle-btn">
-                        <i class='bx bx-check-circle'></i> 부가세 포함여부 설정
-                    </button>
+                    <button id="globalVatBtn" class="vat-toggle-btn"><i class='bx bx-check-circle'></i> 부가세 포함여부 설정</button>
                 </div>
             </header>
-
             <div class="page-body">
-                <!-- Dashboard Section -->
                 <div class="kpi-strip" id="dashboard">
                     <div class="kpi-card">
                         <div class="kpi-icon kpi-stock"><i class='bx bx-package'></i></div>
-                        <div class="kpi-data">
-                            <span class="kpi-label">총 재고 수량</span>
-                            <span class="kpi-value" id="totalStockCount">0</span>
-                        </div>
+                        <div class="kpi-data"><span class="kpi-label">총 재고 수량</span><span class="kpi-value" id="totalStockCount">0</span></div>
                     </div>
                     <div class="kpi-card">
                         <div class="kpi-icon kpi-revenue"><i class='bx bx-trending-up'></i></div>
-                        <div class="kpi-data">
-                            <span class="kpi-label">총 매출 (출고 누적)</span>
-                            <span class="kpi-value" id="totalRevenue">₩ 0</span>
-                        </div>
+                        <div class="kpi-data"><span class="kpi-label">총 매출 (출고 누적)</span><span class="kpi-value" id="totalRevenue">₩ 0</span></div>
                     </div>
                     <div class="kpi-card">
                         <div class="kpi-icon kpi-cost"><i class='bx bx-shopping-bag'></i></div>
-                        <div class="kpi-data">
-                            <span class="kpi-label">총 매입 (비용 누적)</span>
-                            <span class="kpi-value" id="totalCost">₩ 0</span>
+                        <div class="kpi-data"><span class="kpi-label">총 매입 (비용 누적)</span><span class="kpi-value" id="totalCost">₩ 0</span></div>
+                    </div>
+                </div>
+                <section class="section-block" id="forms">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <div class="panel-title-group"><h2><i class='bx bx-edit-alt'></i> 입출고 등록</h2></div>
+                            <div class="toggle-group">
+                                <input type="radio" id="typeIn" name="txType" value="IN" checked>
+                                <label for="typeIn" class="toggle-label">매입 (IN)</label>
+                                <input type="radio" id="typeOut" name="txType" value="OUT">
+                                <label for="typeOut" class="toggle-label">출고 (OUT)</label>
+                            </div>
+                        </div>
+                        <form id="transactionForm" class="entry-form-rows" autocomplete="off">
+                            <div class="form-row hidden" id="outboundSearchContainer">
+                                <div class="fg" style="flex:1">
+                                    <label for="outSearchInput">출고 상품 검색</label>
+                                    <div class="autocomplete"><input type="text" id="outSearchInput" placeholder="바코드 또는 상품명, 분류 입력하여 검색..."></div>
+                                </div>
+                            </div>
+                            <div class="form-row fr-row1">
+                                <div class="fg"><label for="txDate">일자</label><input type="date" id="txDate" required></div>
+                                <div class="fg"><label for="fSupplier">공급사</label><div class="autocomplete"><input type="text" id="fSupplier" required placeholder="최가유통"></div></div>
+                            </div>
+                            <div class="form-row fr-row2">
+                                <div class="fg"><label for="fBrand">브랜드</label><div class="autocomplete"><input type="text" id="fBrand" required placeholder="K2 세이프티"></div></div>
+                                <div class="fg"><label for="fName">상품명</label><div class="autocomplete"><input type="text" id="fName" required placeholder="에어윈드베스트 선풍기조끼"></div></div>
+                                <div class="fg"><label for="fColor">컬러</label><div class="autocomplete"><input type="text" id="fColor" required placeholder="블랙"></div></div>
+                                <div class="fg"><label for="fSize">사이즈</label><div class="autocomplete"><input type="text" id="fSize" required placeholder="FREE"></div></div>
+                            </div>
+                            <div class="form-row fr-row3">
+                                <div class="fg"><label for="txQty">수량</label><input type="number" id="txQty" min="1" required placeholder="0"></div>
+                                <div class="fg" id="priceCalcRow"><label for="txBasePrice">상품가</label><div class="input-vat-group"><input type="number" id="txBasePrice" min="0" placeholder="0"><label class="vat-chip"><input type="checkbox" id="txBaseVat" checked><span>VAT별도</span></label></div></div>
+                                <div class="fg" id="freightCalcCol"><label for="txFreight">운임</label><div class="input-vat-group"><input type="number" id="txFreight" min="0" placeholder="0"><label class="vat-chip"><input type="checkbox" id="txFreightVat" checked><span>VAT별도</span></label></div></div>
+                                <div class="fg"><label id="lblTxPrice" for="txPrice">매입단가 (₩)</label><input type="number" id="txPrice" min="0" required placeholder="자동계산" readonly class="readonly-input"></div>
+                            </div>
+                            <div class="form-row fr-row4">
+                                <div class="fg"><label for="txRemarks">비고</label><input type="text" id="txRemarks" placeholder="메모 입력"></div>
+                                <div class="fg fg-action"><label>&nbsp;</label><button type="submit" class="btn-submit"><i class='bx bx-plus-circle'></i> 등록</button></div>
+                            </div>
+                            <input type="hidden" id="selectedProductId">
+                        </form>
+                    </div>
+                </section>
+                <section class="section-block" id="inventory">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h2><i class='bx bx-box'></i> 실시간 재고 현황</h2>
+                            <div class="header-actions">
+                                <button id="deleteInvBtn" class="btn-outline btn-outline-danger"><i class='bx bx-trash'></i> 선택 삭제</button>
+                                <button id="exportInventoryBtn" class="btn-outline btn-outline-success"><i class='bx bx-download'></i> 엑셀</button>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead><tr>
+                                    <th class="col-check"><input type="checkbox" id="selectAllInv"></th>
+                                    <th>공급사</th><th>브랜드</th><th>상품명</th><th>컬러</th><th>사이즈</th>
+                                    <th class="col-num">매입 단가</th><th class="col-num">현재 재고</th><th class="col-action">관리</th>
+                                </tr></thead>
+                                <tbody id="inventoryTableBody">
+                                    <tr class="loading-row"><td colspan="9"><div class="skeleton"></div></td></tr>
+                                    <tr class="loading-row"><td colspan="9"><div class="skeleton"></div></td></tr>
+                                    <tr class="loading-row"><td colspan="9"><div class="skeleton"></div></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="pagination" id="invPagination"></div>
+                    </div>
+                </section>
+                <section class="section-block" id="transactions">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h2><i class='bx bx-list-ul'></i> 입출고 내역</h2>
+                            <div class="header-actions">
+                                <button id="deleteTxBtn" class="btn-outline btn-outline-danger"><i class='bx bx-trash'></i> 선택 삭제</button>
+                                <button id="exportTransactionsBtn" class="btn-outline btn-outline-success"><i class='bx bx-download'></i> 엑셀</button>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead><tr>
+                                    <th class="col-check"><input type="checkbox" id="selectAllTx"></th>
+                                    <th>일시</th><th>구분</th><th>공급사</th><th>상품명/내역</th>
+                                    <th class="col-num">수량</th><th class="col-num">단가</th><th class="col-num">마진율</th><th>비고</th>
+                                </tr></thead>
+                                <tbody id="transactionTableBody">
+                                    <tr class="loading-row"><td colspan="9"><div class="skeleton"></div></td></tr>
+                                    <tr class="loading-row"><td colspan="9"><div class="skeleton"></div></td></tr>
+                                    <tr class="loading-row"><td colspan="9"><div class="skeleton"></div></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="pagination" id="txPagination"></div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+    <div id="toastContainer" class="toast-container"></div>
+    <script type="module" src="app.js"></script>
+</body>
+</html>
