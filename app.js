@@ -432,7 +432,7 @@ function renderTransactionsTable() {
 
         tr.innerHTML = checkboxHtml +
             '<td>' + escapeHtml(t.txDate || t.timestamp.split('T')[0]) + '</td>' +
-            '<td><span class="' + badgeClass + '">' + typeLabel + '</span></td>' +
+            '<td style="text-align: center;"><span class="' + badgeClass + '">' + typeLabel + '</span></td>' +
             '<td>' + escapeHtml(t.supplier || '-') + '</td>' +
             '<td>' + productDisplay + '</td>' +
             '<td>' + t.qty + '</td>' +
