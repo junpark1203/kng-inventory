@@ -1356,3 +1356,232 @@ document.addEventListener('DOMContentLoaded', function() {
         sidebarOverlay.addEventListener('click', closeMobileMenu);
     }
 });
+
+// ==========================================
+// 트랜잭션 수정 팝업 기능
+// ==========================================
+window.openTxEditModal = async function(txId) {
+    var t = transactions.find(function(item) { return item.id === txId; });
+    if (!t) return;
+    
+    document.getElementById('eTxId').value = t.id;
+    document.getElementById('eProductId').value = t.productId;
+    document.getElementById('eTxDate').value = t.txDate || t.timestamp.split('T')[0];
+    document.getElementById('eTxType').value = t.type === 'IN' ? '매입 (IN)' : '출고 (OUT)';
+    document.getElementById('eSupplier').value = t.supplier || '';
+    document.getElementById('eBrand').value = t.brand || '';
+    document.getElementById('eName').value = t.productName || '';
+    document.getElementById('eColor').value = t.color || '';
+    document.getElementById('eSize').value = t.size || '';
+    document.getElementById('eQty').value = t.qty || 0;
+    document.getElementById('eBasePrice').value = t.basePrice || 0;
+    document.getElementById('eFreight').value = t.freight || 0;
+    document.getElementById('eBaseVat').checked = t.baseVatExcluded !== false;
+    document.getElementById('eFreightVat').checked = t.freightVatExcluded !== false;
+    
+    var isOut = t.type === 'OUT';
+    var eSellVat = document.getElementById('eSellVat');
+    var eSellVatWrap = document.getElementById('eSellVatWrap');
+    var eOutExtraRow = document.getElementById('eOutExtraRow');
+    
+    if (isOut) {
+        document.getElementById('ePrice').value = t.price || 0;
+        eSellVatWrap.classList.remove('hidden');
+        eSellVat.checked = true; // default to true in form logic, adapt as needed
+        eOutExtraRow.classList.remove('hidden');
+        document.getElementById('eOutBuyPrice').value = t.buyPrice || 0;
+        document.getElementById('eOutMarginRate').value = t.margin !== undefined && t.margin !== null ? t.margin + '%' : '-';
+        document.getElementById('eLblTxPrice').textContent = '매출단가 (₩)';
+    } else {
+        document.getElementById('ePrice').value = t.price || 0;
+        eSellVatWrap.classList.add('hidden');
+        eOutExtraRow.classList.add('hidden');
+        document.getElementById('eLblTxPrice').textContent = '매입단가 (₩)';
+    }
+    
+    document.getElementById('eRemarks').value = t.remarks || '';
+    
+    document.getElementById('txEditModal').classList.add('active');
+};
+
+document.getElementById('closeTxEditModalBtn').addEventListener('click', closeTxEditModal);
+document.getElementById('cancelTxEditBtn').addEventListener('click', closeTxEditModal);
+
+function closeTxEditModal() {
+    document.getElementById('txEditForm').reset();
+    document.getElementById('txEditModal').classList.remove('active');
+}
+
+// 자동완성 붙이기 (모달)
+attachGenericAutocomplete('eSupplier', 'supplier');
+attachGenericAutocomplete('eBrand', 'brand');
+attachGenericAutocomplete('eName', 'name');
+attachGenericAutocomplete('eColor', 'color');
+attachGenericAutocomplete('eSize', 'size');
+
+function updateETxPrice() {
+    var b = parseInt(document.getElementById('eBasePrice').value, 10) || 0;
+    var f = parseInt(document.getElementById('eFreight').value, 10) || 0;
+    var bv = document.getElementById('eBaseVat').checked;
+    var fv = document.getElementById('eFreightVat').checked;
+    var finalB = bv ? b : Math.round(b * 1.1);
+    var finalF = fv ? f : Math.round(f * 1.1);
+    document.getElementById('ePrice').value = finalB + finalF;
+}
+
+document.getElementById('eBasePrice').addEventListener('input', updateETxPrice);
+document.getElementById('eFreight').addEventListener('input', updateETxPrice);
+document.getElementById('eBaseVat').addEventListener('change', updateETxPrice);
+document.getElementById('eFreightVat').addEventListener('change', updateETxPrice);
+
+// 팝업 폼 제출(수정 처리)
+document.getElementById('txEditForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    var txId = document.getElementById('eTxId').value;
+    var origTx = transactions.find(function(t) { return t.id === txId; });
+    if (!origTx) return;
+
+    var newQty = parseInt(document.getElementById('eQty').value, 10);
+    var newPriceRaw = parseInt(document.getElementById('ePrice').value, 10);
+    var isSellVat = document.getElementById('eSellVat').checked;
+    
+    var type = origTx.type; // Read-only
+    var newPrice = type === 'OUT' && isSellVat ? Math.round(newPriceRaw / 1.1) : newPriceRaw;
+    
+    var fSupplier = document.getElementById('eSupplier').value.trim();
+    var fBrand = document.getElementById('eBrand').value.trim();
+    var fName = document.getElementById('eName').value.trim();
+    var fColor = document.getElementById('eColor').value.trim();
+    var fSize = document.getElementById('eSize').value.trim();
+    
+    var submitBtn = document.getElementById('saveTxEditBtn');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> 저장중...";
+    
+    try {
+        await runTransaction(db, async function(transaction) {
+            var txRef = doc(db, 'kng_transactions', txId);
+            var txSnap = await transaction.get(txRef);
+            if (!txSnap.exists()) throw "트랜잭션을 찾을 수 없습니다.";
+            
+            var metricsRef = doc(db, 'kng_data', 'metrics');
+            var metricsSnap = await transaction.get(metricsRef);
+            var metricsData = metricsSnap.exists() ? metricsSnap.data() : { totalRevenue: 0, totalCost: 0 };
+            
+            // 1. REVERT old transaction
+            var revertRevenue = 0;
+            var revertCost = 0;
+            if (type === 'OUT') {
+                revertRevenue = origTx.qty * origTx.price;
+            } else {
+                revertCost = origTx.qty * origTx.price;
+            }
+            
+            var oldProdRef = doc(db, 'kng_products', origTx.productId);
+            var oldProdSnap = await transaction.get(oldProdRef);
+            var newOldStock = 0;
+            if (oldProdSnap.exists()) {
+                var oldProdData = oldProdSnap.data();
+                newOldStock = oldProdData.stock + (type === 'OUT' ? origTx.qty : -origTx.qty);
+                transaction.update(oldProdRef, { stock: newOldStock });
+            }
+            
+            // 2. APPLY new transaction
+            var applyRevenue = 0;
+            var applyCost = 0;
+            var newProductId = origTx.productId;
+            var newProdName = fName;
+            var buyPriceForLog = null;
+            
+            if (type === 'OUT') {
+                applyRevenue = newQty * newPrice;
+                // find product matching new criteria
+                var targetProd = products.find(function(p) { return p.brand === fBrand && p.name === fName && p.color === fColor && p.size === fSize; });
+                if (!targetProd) throw "변경된 정보와 일치하는 상품이 없습니다.";
+                newProductId = targetProd.id;
+                newProdName = targetProd.name;
+                buyPriceForLog = targetProd.buyPrice;
+                
+                var newProdRef = doc(db, 'kng_products', newProductId);
+                var newProdSnap = await transaction.get(newProdRef);
+                var updatedStock = 0;
+                if(newProdSnap.exists()) {
+                    var npData = newProdSnap.data();
+                    updatedStock = (newProductId === origTx.productId) ? (newOldStock - newQty) : (npData.stock - newQty);
+                    if (updatedStock < 0) throw "출고 수량이 재고 수량을 초과합니다.";
+                    transaction.update(newProdRef, { stock: updatedStock, sellPrice: newPrice });
+                }
+            } else {
+                applyCost = newQty * newPrice;
+                var targetProd = products.find(function(p) { return p.brand === fBrand && p.name === fName && p.color === fColor && p.size === fSize && p.supplier === fSupplier; });
+                
+                if (targetProd) {
+                    newProductId = targetProd.id;
+                    var newProdRef = doc(db, 'kng_products', newProductId);
+                    var newProdSnap = await transaction.get(newProdRef);
+                    if(newProdSnap.exists()) {
+                        var npData = newProdSnap.data();
+                        var updatedStock = (newProductId === origTx.productId) ? (newOldStock + newQty) : (npData.stock + newQty);
+                        transaction.update(newProdRef, { stock: updatedStock, buyPrice: newPrice });
+                    }
+                } else {
+                    var freshRef = doc(collection(db, 'kng_products'));
+                    newProductId = freshRef.id;
+                    transaction.set(freshRef, {
+                        id: newProductId,
+                        supplier: fSupplier,
+                        brand: fBrand,
+                        name: fName,
+                        color: fColor,
+                        size: fSize,
+                        stock: newQty,
+                        buyPrice: newPrice,
+                        sellPrice: 0 
+                    });
+                }
+            }
+            
+            var mRev = metricsData.totalRevenue - revertRevenue + applyRevenue;
+            var mCost = metricsData.totalCost - revertCost + applyCost;
+            transaction.update(metricsRef, { totalRevenue: mRev, totalCost: mCost });
+            
+            // 3. UPDATE transaction doc
+            var outMarginRate = null;
+            if (type === 'OUT' && newPrice > 0 && buyPriceForLog > 0) {
+                 var pureSell = isSellVat ? Math.round(newPriceRaw / 1.1) : newPriceRaw;
+                 outMarginRate = parseFloat(((pureSell - buyPriceForLog) / pureSell * 100).toFixed(1));
+            } else if (type === 'OUT') {
+                 outMarginRate = parseFloat(document.getElementById('eOutMarginRate').value) || 0;
+            }
+            
+            transaction.update(txRef, {
+                productId: newProductId,
+                productName: newProdName,
+                supplier: fSupplier,
+                brand: fBrand,
+                color: fColor,
+                size: fSize,
+                qty: newQty,
+                price: newPrice,
+                basePrice: parseInt(document.getElementById('eBasePrice').value, 10) || 0,
+                freight: parseInt(document.getElementById('eFreight').value, 10) || 0,
+                baseVatExcluded: document.getElementById('eBaseVat').checked,
+                freightVatExcluded: document.getElementById('eFreightVat').checked,
+                buyPrice: buyPriceForLog !== null ? buyPriceForLog : origTx.buyPrice,
+                margin: outMarginRate,
+                txDate: document.getElementById('eTxDate').value,
+                remarks: document.getElementById('eRemarks').value.trim()
+            });
+        });
+        
+        showToast('내역 업데이트 완료', 'success');
+        closeTxEditModal();
+    } catch(err) {
+        showToast('내역 갱신 실패: ' + err, 'error');
+        console.error(err);
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = "<i class='bx bx-save'></i> 내역 수정하기";
+    }
+});

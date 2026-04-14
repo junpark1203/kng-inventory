@@ -288,6 +288,7 @@
                                         <th class="col-num sortable" data-sort="margin">마진율 <i class='bx bx-sort'></i>
                                         </th>
                                         <th>비고</th>
+                                        <th class="col-action">관리</th>
                                     </tr>
                                 </thead>
                                 <tbody id="transactionTableBody">
@@ -309,6 +310,79 @@
                 </section>
             </div>
         </main>
+    </div>
+
+    <!-- Transaction Edit Modal -->
+    <div id="txEditModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>입출고 내역 수정</h2>
+                <button type="button" class="btn-close" id="closeTxEditModalBtn"><i class='bx bx-x'></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="txEditForm" class="entry-form-rows" autocomplete="off">
+                    <input type="hidden" id="eTxId">
+                    <input type="hidden" id="eProductId">
+                    
+                    <div class="form-row fr-row1">
+                        <div class="fg"><label for="eTxDate">일자</label><input type="date" id="eTxDate" required></div>
+                        <div class="fg"><label for="eTxType">구분</label><input type="text" id="eTxType" class="readonly-input" readonly></div>
+                        <div class="fg"><label for="eSupplier">공급사</label>
+                            <div class="autocomplete"><input type="text" id="eSupplier" required placeholder="최가유통"></div>
+                        </div>
+                    </div>
+                    <div class="form-row fr-row2">
+                        <div class="fg"><label for="eBrand">브랜드</label>
+                            <div class="autocomplete"><input type="text" id="eBrand" required placeholder="K2 세이프티"></div>
+                        </div>
+                        <div class="fg"><label for="eName">상품명</label>
+                            <div class="autocomplete"><input type="text" id="eName" required placeholder="에어윈드베스트 선풍기조끼"></div>
+                        </div>
+                        <div class="fg"><label for="eColor">컬러</label>
+                            <div class="autocomplete"><input type="text" id="eColor" required placeholder="블랙"></div>
+                        </div>
+                        <div class="fg"><label for="eSize">사이즈</label>
+                            <div class="autocomplete"><input type="text" id="eSize" required placeholder="FREE"></div>
+                        </div>
+                    </div>
+                    <div class="form-row fr-row3">
+                        <div class="fg"><label for="eQty">수량</label><input type="number" id="eQty" min="1" required></div>
+                        <div class="fg">
+                            <label for="eBasePrice">상품가</label>
+                            <div class="input-vat-group">
+                                <input type="number" id="eBasePrice" min="0" placeholder="0">
+                                <label class="vat-chip"><input type="checkbox" id="eBaseVat"><span>VAT별도</span></label>
+                            </div>
+                        </div>
+                        <div class="fg">
+                            <label for="eFreight">운임</label>
+                            <div class="input-vat-group">
+                                <input type="number" id="eFreight" min="0" placeholder="0">
+                                <label class="vat-chip"><input type="checkbox" id="eFreightVat"><span>VAT별도</span></label>
+                            </div>
+                        </div>
+                        <div class="fg">
+                            <label id="eLblTxPrice" for="ePrice">단가 (₩)</label>
+                            <div class="input-vat-group">
+                                <input type="number" id="ePrice" min="0" required class="readonly-input" readonly>
+                                <label class="vat-chip hidden" id="eSellVatWrap"><input type="checkbox" id="eSellVat"><span>VAT포함</span></label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row fr-row3-extra hidden" id="eOutExtraRow">
+                        <div class="fg"><label>매입단가(공급가)</label><input type="number" id="eOutBuyPrice" class="readonly-input" readonly></div>
+                        <div class="fg"><label>마진율</label><input type="text" id="eOutMarginRate" class="readonly-input" readonly></div>
+                    </div>
+                    <div class="form-row fr-row4">
+                        <div class="fg"><label for="eRemarks">비고</label><input type="text" id="eRemarks" placeholder="메모 입력"></div>
+                    </div>
+                    <div class="form-actions" style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 8px;">
+                        <button type="button" class="btn-outline" id="cancelTxEditBtn">취소</button>
+                        <button type="submit" class="btn-primary" id="saveTxEditBtn"><i class='bx bx-save'></i> 내역 수정하기</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <div id="toastContainer" class="toast-container"></div>
