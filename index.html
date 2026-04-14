@@ -105,7 +105,7 @@
                                 </div>
                             </div>
 
-                            <!-- Row 1 -->
+                            <!-- Row 1: 기본 정보 -->
                             <div class="fg">
                                 <label for="txDate">일자</label>
                                 <input type="date" id="txDate" required>
@@ -123,7 +123,7 @@
                                 <div class="autocomplete"><input type="text" id="fName" required placeholder="쿨토시"></div>
                             </div>
 
-                            <!-- Row 2 -->
+                            <!-- Row 2: 품목 상세 + 수량 + 상품가 -->
                             <div class="fg">
                                 <label for="fColor">컬러</label>
                                 <div class="autocomplete"><input type="text" id="fColor" required placeholder="블랙"></div>
@@ -136,12 +136,6 @@
                                 <label for="txQty">수량</label>
                                 <input type="number" id="txQty" min="1" required placeholder="0">
                             </div>
-                            <div class="fg">
-                                <label id="lblTxPrice" for="txPrice">매입단가 (₩)</label>
-                                <input type="number" id="txPrice" min="0" required placeholder="자동계산" readonly class="readonly-input">
-                            </div>
-
-                            <!-- Row 3 -->
                             <div class="fg" id="priceCalcRow">
                                 <label for="txBasePrice">상품가</label>
                                 <div class="input-vat-group">
@@ -152,6 +146,8 @@
                                     </label>
                                 </div>
                             </div>
+
+                            <!-- Row 3: 운임 + 단가(자동) + 비고 + 등록 -->
                             <div class="fg" id="freightCalcCol">
                                 <label for="txFreight">운임</label>
                                 <div class="input-vat-group">
@@ -161,6 +157,10 @@
                                         <span>VAT별도</span>
                                     </label>
                                 </div>
+                            </div>
+                            <div class="fg">
+                                <label id="lblTxPrice" for="txPrice">매입단가 (₩)</label>
+                                <input type="number" id="txPrice" min="0" required placeholder="자동계산" readonly class="readonly-input">
                             </div>
                             <div class="fg">
                                 <label for="txRemarks">비고</label>
