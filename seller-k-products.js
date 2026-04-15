@@ -524,6 +524,119 @@ document.querySelectorAll('.sk-checkbox').forEach(function(cb) {
         });
     }
 
+    // 엑셀 일괄 등록 - 양식 다운로드
+    document.getElementById('downloadTemplateBtn').addEventListener('click', function() {
+        if (typeof XLSX === 'undefined') {
+            showToast('엑셀 라이브러리가 로드되지 않았습니다. 새로고침 해주세요.', 'error');
+            return;
+        }
+        var wb = XLSX.utils.book_new();
+        // 헤더: 14개
+        var wsData = [
+            ["매입처", "브랜드", "상품명", "컬러", "사이즈", "업로드일(YYYY-MM-DD)", "매입가(단가)", "매입운임", "운임기준(수량별/무료/조건부/유료)", "수량별기준(공란시1)", "판매가", "판매운임", "최저가설정(O/X)", "비고"],
+            ["예시)동대문K", "K브랜드", "반팔티", "블랙", "Free", "", 15000, 3000, "수량별", 1, 25000, 3000, "X", "마감 좋음"]
+        ];
+        var ws = XLSX.utils.aoa_to_sheet(wsData);
+        // 컬럼 너비 설정
+        ws['!cols'] = [ {wpx: 80}, {wpx: 100}, {wpx: 150}, {wpx: 60}, {wpx: 60}, {wpx: 130}, {wpx: 80}, {wpx: 80}, {wpx: 180}, {wpx: 120}, {wpx: 80}, {wpx: 80}, {wpx: 100}, {wpx: 150} ];
+        
+        XLSX.utils.book_append_sheet(wb, ws, "상품양식");
+        XLSX.writeFile(wb, "매입상품_일괄등록_양식.xlsx");
+    });
+
+    // 엑셀 일괄 등록 - 파일 선택 창 열기
+    document.getElementById('bulkUploadBtn').addEventListener('click', function() {
+        document.getElementById('bulkUploadFile').click();
+    });
+
+    // 엑셀 일괄 등록 - 파싱 및 서버 전송
+    document.getElementById('bulkUploadFile').addEventListener('change', function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+
+        if (typeof XLSX === 'undefined') {
+            showToast('엑셀 라이브러리가 로드되지 않았습니다.', 'error');
+            e.target.value = '';
+            return;
+        }
+
+        var reader = new FileReader();
+        reader.onload = function(evt) {
+            try {
+                var data = new Uint8Array(evt.target.result);
+                var workbook = XLSX.read(data, {type: 'array'});
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+                
+                // header: 1 means arrays of arrays
+                var rows = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+                
+                var products = [];
+                for(var i = 1; i < rows.length; i++) {
+                    var row = rows[i];
+                    if(!row || row.length === 0 || !row[0] || String(row[0]).trim() === "예시)동대문K") continue; // 빈 줄이나 예시 스킵
+                    
+                    var p = {
+                        id: generateId() + '_' + i,
+                        supplier: String(row[0] || '').trim(),
+                        brand: String(row[1] || '').trim(),
+                        name: String(row[2] || '').trim(),
+                        color: String(row[3] || '').trim(),
+                        size: String(row[4] || '').trim(),
+                        uploadDate: (row[5] ? String(row[5]).trim() : ""),
+                        buyPrice: parseInt(row[6], 10) || 0,
+                        buyShipping: parseInt(row[7], 10) || 0,
+                        shippingBasis: String(row[8] || '무료').trim(),
+                        shippingQty: parseInt(row[9], 10) || 1,
+                        sellPrice: parseInt(row[10], 10) || 0,
+                        sellShipping: parseInt(row[11], 10) || 0,
+                        isLowestPrice: (String(row[12] || 'X').trim().toUpperCase() === 'O') ? 1 : 0,
+                        remarks: String(row[13] || '').trim()
+                    };
+                    
+                    if(p.name !== '') {
+                        products.push(p);
+                    }
+                }
+
+                if(products.length === 0) {
+                    showToast('업로드할 유효한 상품 데이터가 없습니다.', 'warning');
+                    e.target.value = '';
+                    return;
+                }
+
+                if(!confirm(products.length + '개의 상품을 엑셀로 일괄 등록하시겠습니까?')) {
+                    e.target.value = '';
+                    return;
+                }
+
+                fetch(API_BASE + '/bulk', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ products: products })
+                })
+                .then(function(res) { return res.json(); })
+                .then(function(result) {
+                    if(result.error) throw new Error(result.error);
+                    showToast(result.count + '개 상품이 성공적으로 일괄 등록되었습니다.', 'success');
+                    e.target.value = '';
+                    loadProducts();
+                })
+                .catch(function(err) {
+                    console.error("Bulk Upload Error:", err);
+                    showToast('대량 등록 실패: ' + err.message, 'error');
+                    e.target.value = '';
+                });
+
+            } catch(err) {
+                console.error("Excel parsing error:", err);
+                showToast('엑셀 파일 분해 중 오류가 발생했습니다.', 'error');
+                e.target.value = '';
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    });
+
     toggleShippingQty();
 });
 
