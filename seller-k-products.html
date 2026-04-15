@@ -154,6 +154,7 @@
                                         <th colspan="4" class="th-group-label th-group-purchase">매입</th>
                                         <th colspan="3" class="th-group-label th-group-sales">매출</th>
                                         <th colspan="3" class="th-group-label th-group-settle">정산</th>
+                                        <th rowspan="2" class="sortable" data-sort="remarks" style="min-width:120px;">비고 <i class='bx bx-sort'></i></th>
                                         <th rowspan="2" class="col-action-sk">관리</th>
                                     </tr>
                                     <!-- Sub-header row -->
@@ -198,23 +199,23 @@
                         <div class="modal-section-title section-purchase fg-full">📦 기본 정보</div>
                         <div class="fg">
                             <label for="skSupplier">매입처</label>
-                            <input type="text" id="skSupplier" required placeholder="최가유통">
+                            <input type="text" id="skSupplier" placeholder="최가유통">
                         </div>
                         <div class="fg">
                             <label for="skBrand">브랜드</label>
-                            <input type="text" id="skBrand" required placeholder="K2 세이프티">
+                            <input type="text" id="skBrand" placeholder="K2 세이프티">
                         </div>
                         <div class="fg fg-full">
                             <label for="skName">상품명</label>
-                            <input type="text" id="skName" required placeholder="에어윈드베스트 선풍기조끼">
+                            <input type="text" id="skName" placeholder="에어윈드베스트 선풍기조끼">
                         </div>
                         <div class="fg">
                             <label for="skColor">컬러</label>
-                            <input type="text" id="skColor" required placeholder="블랙">
+                            <input type="text" id="skColor" placeholder="블랙">
                         </div>
                         <div class="fg">
                             <label for="skSize">사이즈</label>
-                            <input type="text" id="skSize" required placeholder="FREE">
+                            <input type="text" id="skSize" placeholder="FREE">
                         </div>
                         <div class="fg">
                             <label for="skUploadDate">스마트스토어 업로드일</label>
@@ -225,7 +226,7 @@
                         <div class="modal-section-title section-purchase fg-full">💰 매입 정보 <span class="vat-inline">VAT별도</span></div>
                         <div class="fg">
                             <label for="skBuyPrice">매입가 (공급가)</label>
-                            <input type="number" id="skBuyPrice" min="0" required placeholder="0">
+                            <input type="number" id="skBuyPrice" min="0" placeholder="0">
                         </div>
                         <div class="fg">
                             <label for="skBuyShipping">매입 운임</label>
@@ -253,7 +254,7 @@
                         <div class="modal-section-title section-sales fg-full">🛒 매출 정보 <span class="vat-inline vat-included">VAT포함</span></div>
                         <div class="fg">
                             <label for="skSellPrice">판매가 (소비자가)</label>
-                            <input type="number" id="skSellPrice" min="0" required placeholder="0">
+                            <input type="number" id="skSellPrice" min="0" placeholder="0">
                         </div>
                         <div class="fg">
                             <label for="skSellShipping">판매 운임 (배송비)</label>
@@ -262,6 +263,10 @@
                         <div class="fg">
                             <label>매출 합계 (자동계산)</label>
                             <input type="text" id="skSellTotal" class="calc-preview" readonly placeholder="자동계산">
+                            <label style="display:flex; align-items:center; cursor:pointer; margin-top:8px; font-size:12px; color:#555;">
+                                <input type="checkbox" id="skIsLowestPrice" style="width:14px; margin:0 6px 0 0;">
+                                온라인 최저가 설정됨
+                            </label>
                         </div>
 
                         <!-- 정산 정보 (자동계산) -->
@@ -277,6 +282,13 @@
                         <div class="fg">
                             <label>수익률</label>
                             <input type="text" id="skPreviewRate" class="calc-preview" readonly placeholder="자동계산">
+                        </div>
+
+                        <!-- 추가 정보 -->
+                        <div class="modal-section-title section-info fg-full" style="margin-top:10px;">📝 추가 사항</div>
+                        <div class="fg fg-full">
+                            <label for="skRemarks">비고</label>
+                            <textarea id="skRemarks" rows="2" placeholder="기타 확인사항 입력"></textarea>
                         </div>
                     </div>
                     <div class="modal-footer">

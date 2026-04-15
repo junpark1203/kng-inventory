@@ -145,7 +145,7 @@ function renderTable() {
     var html = '';
 
     if (products.length === 0) {
-        html = '<tr><td colspan="17" style="text-align:center; padding:30px; color:var(--gray-500);">등록된 매입상품이 없습니다.</td></tr>';
+        html = '<tr><td colspan="18" style="text-align:center; padding:30px; color:var(--gray-500);">등록된 매입상품이 없습니다.</td></tr>';
     } else {
         products.forEach(function(p) {
             var buyTotal = calcBuyTotal(p.buyPrice, p.buyShipping, p.shippingBasis, p.shippingQty);
@@ -163,6 +163,11 @@ function renderTable() {
             var profitClass = profit > 0 ? 'text-success' : (profit < 0 ? 'text-danger' : '');
             var badgeClass = profitRate > 20 ? 'badge-success' : 'badge-neutral';
 
+            var sellPriceHtml = formatCurrency(p.sellPrice || 0);
+            if (p.isLowestPrice) {
+                sellPriceHtml += '<br><span style="font-size:10px; background:#fff3cd; color:#856404; padding:2px 4px; border-radius:3px; margin-top:4px; display:inline-block; font-weight:600;">최저가</span>';
+            }
+
             html += '<tr>' +
                 '<td class="col-check"><input type="checkbox" class="sk-checkbox" value="' + escapeHtml(p.id) + '"></td>' +
                 '<td>' + escapeHtml(p.supplier) + '</td>' +
@@ -175,12 +180,13 @@ function renderTable() {
                 '<td class="col-num buy-col">' + formatCurrency(p.buyShipping || 0) + '</td>' +
                 '<td class="buy-col" style="text-align:center; font-size:12px;">' + escapeHtml(shippingBasisLabel) + '</td>' +
                 '<td class="col-num buy-col" style="font-weight:600;">' + formatCurrency(buyTotal) + '</td>' +
-                '<td class="col-num sell-col">' + formatCurrency(p.sellPrice || 0) + '</td>' +
+                '<td class="col-num sell-col">' + sellPriceHtml + '</td>' +
                 '<td class="col-num sell-col">' + formatCurrency(p.sellShipping || 0) + '</td>' +
                 '<td class="col-num sell-col" style="font-weight:600;">' + formatCurrency(sellTotal) + '</td>' +
                 '<td class="col-num profit-col" style="color:var(--danger)">' + formatCurrency(commission) + '</td>' +
                 '<td class="col-num profit-col ' + profitClass + '" style="font-weight:bold;">' + formatCurrency(profit) + '</td>' +
                 '<td class="col-num profit-col"><span class="badge ' + badgeClass + '">' + profitRate.toFixed(1) + '%</span></td>' +
+                '<td style="font-size:11px; color:#555; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:120px;" title="' + escapeHtml(p.remarks || '') + '">' + escapeHtml(p.remarks || '') + '</td>' +
                 '<td class="col-action"><button class="btn-icon edit-btn" data-id="' + escapeHtml(p.id) + '"><i class="bx bx-edit-alt"></i></button></td>' +
                 '</tr>';
         });
@@ -367,7 +373,9 @@ document.addEventListener('DOMContentLoaded', function() {
             shippingBasis: document.getElementById('skShippingBasis').value,
             shippingQty: parseInt(document.getElementById('skShippingQty').value, 10) || 1,
             sellPrice: parseInt(document.getElementById('skSellPrice').value, 10) || 0,
-            sellShipping: parseInt(document.getElementById('skSellShipping').value, 10) || 0
+            sellShipping: parseInt(document.getElementById('skSellShipping').value, 10) || 0,
+            isLowestPrice: document.getElementById('skIsLowestPrice').checked ? 1 : 0,
+            remarks: document.getElementById('skRemarks') ? document.getElementById('skRemarks').value.trim() : ''
         };
 
         if (editingId) {
