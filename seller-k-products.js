@@ -110,20 +110,12 @@ function calcCommission(sellPrice, sellShipping) {
 }
 
 function calcBuyTotal(buyPrice, buyShipping, shippingBasis, shippingQty) {
-    if (!buyPrice) buyPrice = 0;
-    if (!buyShipping) buyShipping = 0;
-    var finalShipping = 0;
+    var effectiveShipping = buyShipping || 0;
     if (shippingBasis === '무료') {
-        finalShipping = 0;
-    } else if (shippingBasis === '조건부' || shippingBasis === '유료') {
-        finalShipping = buyShipping;
-    } else {
-        // 수량별
-        var sq = parseInt(shippingQty, 10);
-        if (isNaN(sq) || sq < 1) sq = 1;
-        finalShipping = Math.round(buyShipping / sq);
+        effectiveShipping = 0;
     }
-    return buyPrice + finalShipping;
+    // 배송대행 특성상 운임을 수량으로 나누지 않고 1건의 배송비를 그대로 원가에 합산함.
+    return (buyPrice || 0) + effectiveShipping;
 }
 
 function calcSellTotal(sellPrice, sellShipping) {
