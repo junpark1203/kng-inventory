@@ -194,7 +194,7 @@ function renderTable() {
                 '<td>' + escapeHtml(p.color) + '</td>' +
                 '<td>' + escapeHtml(p.size) + '</td>' +
                 '<td>' + escapeHtml(p.uploadDate) + '</td>' +
-                '<td>' + formatDateTime(p.updatedAt) + '</td>' +
+                '<td>' + formatDateTime(p.updatedAt) + (p.lastChangeLog ? '<br><span style="font-size:10px; color:var(--text-secondary);">(' + escapeHtml(p.lastChangeLog) + ')</span>' : '') + '</td>' +
                 '<td class="col-num buy-col">' + formatCurrency(p.buyPrice) + '</td>' +
                 '<td class="col-num buy-col">' + formatCurrency(p.buyShipping || 0) + '</td>' +
                 '<td class="buy-col" style="text-align:center; font-size:12px;">' + escapeHtml(shippingBasisLabel) + '</td>' +
@@ -268,11 +268,30 @@ function openModal(id) {
             if (document.getElementById('skTimestampDisplay')) {
                 document.getElementById('skTimestampDisplay').innerHTML = '최초등록: ' + formatDateTime(p.createdAt) + ' &nbsp;|&nbsp; 최종수정: ' + formatDateTime(p.updatedAt);
             }
+            if (document.getElementById('skLogsContainer')) {
+                document.getElementById('skLogsContainer').style.display = 'none';
+                document.getElementById('skLogsList').innerHTML = '';
+                
+                fetch(API_BASE + '/' + id + '/logs')
+                    .then(function(res) { return res.json(); })
+                    .then(function(logs) {
+                        if (logs && logs.length > 0) {
+                            var logHtml = '';
+                            logs.forEach(function(l) {
+                                logHtml += '<li style="margin-bottom:6px; line-height:1.4;"><strong>' + formatDateTime(l.createdAt) + '</strong> (' + escapeHtml(l.summary) + ')<br><span style="color:#888;">' + escapeHtml(l.logText) + '</span></li>';
+                            });
+                            document.getElementById('skLogsList').innerHTML = logHtml;
+                            document.getElementById('skLogsContainer').style.display = 'block';
+                        }
+                    })
+                    .catch(function(err) { console.error('이력 로딩 실패:', err); });
+            }
             toggleShippingQty();
             updateCalcPreview();
         }
     } else {
         if (document.getElementById('skTimestampDisplay')) document.getElementById('skTimestampDisplay').innerHTML = '';
+        if (document.getElementById('skLogsContainer')) document.getElementById('skLogsContainer').style.display = 'none';
     }
 
     modal.classList.add('active');
