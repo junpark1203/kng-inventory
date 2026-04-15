@@ -66,7 +66,7 @@ function updateConnectionStatus(online) {
 // ==========================================
 // API 설정
 // ==========================================
-const API_BASE = 'http://localhost:3000/api/seller-k/products';
+const API_BASE = 'https://kng.junparks.com/api/seller-k/products';
 
 // ==========================================
 // 앱 상태

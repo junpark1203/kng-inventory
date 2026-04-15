@@ -1,5 +1,7 @@
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
@@ -7,10 +9,31 @@ const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// CORS 설정 (모든 도메인 허용)
+// 보안 헤더 (XSS, 클릭재킹 방지 등)
+app.use(helmet({
+    contentSecurityPolicy: false  // Firebase SDK 로드를 위해 비활성화
+}));
+// CORS 설정
 app.use(cors());
 // JSON 바디 파싱
 app.use(express.json());
+// API 접속 횟수 제한 (IP당 15분에 100회)
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    message: { error: '요청이 너무 많습니다. 잠시 후 다시 시도하세요.' }
+});
+app.use('/api/', apiLimiter);
+
+// ==========================================
+// 프론트엔드 정적 파일 서빙
+// ==========================================
+const publicDir = path.join(__dirname, 'public');
+if (!fs.existsSync(publicDir)) {
+    fs.mkdirSync(publicDir);
+    console.log('public 폴더 생성됨:', publicDir);
+}
+app.use(express.static(publicDir));
 
 // 데이터 디렉터리 확인 및 생성
 // NAS에서 볼륨으로 마운트될 디렉터리입니다.
@@ -129,8 +152,21 @@ app.post('/api/seller-k/products/delete', (req, res) => {
     });
 });
 
+// ==========================================
+// SPA 폴백: 알 수 없는 경로는 index.html로
+// ==========================================
+app.get('*', (req, res) => {
+    const indexFile = path.join(publicDir, 'index.html');
+    if (fs.existsSync(indexFile)) {
+        res.sendFile(indexFile);
+    } else {
+        res.status(404).send('index.html 파일을 public/ 폴더에 업로드해주세요.');
+    }
+});
+
 // 서버 실행
 app.listen(PORT, () => {
-    console.log(`K&G API Server is running on port ${PORT}`);
-    console.log(`http://localhost:${PORT}/api/seller-k/products`);
+    console.log(`K&G Server is running on port ${PORT}`);
+    console.log(`웹 페이지: http://localhost:${PORT}`);
+    console.log(`API: http://localhost:${PORT}/api/seller-k/products`);
 });
