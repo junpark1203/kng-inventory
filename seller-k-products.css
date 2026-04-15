@@ -35,6 +35,10 @@
     background: var(--gray-50);
 }
 
+.data-table th, .data-table td {
+    text-align: center !important;
+}
+
 /* ── KPI Cards — Seller K ── */
 .kpi-strip-sk {
     display: grid;
