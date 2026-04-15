@@ -155,7 +155,6 @@
                                         <th colspan="3" class="th-group-label th-group-sales">매출</th>
                                         <th colspan="3" class="th-group-label th-group-settle">정산</th>
                                         <th rowspan="2" class="sortable" data-sort="remarks" style="min-width:120px;">비고 <i class='bx bx-sort'></i></th>
-                                        <th rowspan="2" class="col-action-sk">관리</th>
                                     </tr>
                                     <!-- Sub-header row -->
                                     <tr id="skSortHeaders">
@@ -220,6 +219,13 @@
                         <div class="fg">
                             <label for="skUploadDate">스마트스토어 업로드일</label>
                             <input type="date" id="skUploadDate">
+                        </div>
+                        <div class="fg">
+                            <label>상태</label>
+                            <label style="display:flex; align-items:center; cursor:pointer; margin-top:8px; font-size:14px; color:var(--danger); font-weight:600;">
+                                <input type="checkbox" id="skIsSoldOut" style="width:16px; height:16px; margin:0 8px 0 0; accent-color:var(--danger)">
+                                품절 처리
+                            </label>
                         </div>
 
                         <!-- 매입 정보 -->

@@ -145,7 +145,7 @@ function renderTable() {
     var html = '';
 
     if (products.length === 0) {
-        html = '<tr><td colspan="18" style="text-align:center; padding:30px; color:var(--gray-500);">등록된 매입상품이 없습니다.</td></tr>';
+        html = '<tr><td colspan="17" style="text-align:center; padding:30px; color:var(--gray-500);">등록된 매입상품이 없습니다.</td></tr>';
     } else {
         products.forEach(function(p) {
             var buyTotal = calcBuyTotal(p.buyPrice, p.buyShipping, p.shippingBasis, p.shippingQty);
@@ -168,11 +168,17 @@ function renderTable() {
                 sellPriceHtml += '<br><span style="font-size:10px; background:#fff3cd; color:#856404; padding:2px 4px; border-radius:3px; margin-top:4px; display:inline-block; font-weight:600;">최저가</span>';
             }
 
-            html += '<tr>' +
+            var nameHtml = '<strong>' + escapeHtml(p.name) + '</strong>';
+            if (p.isSoldOut) {
+                nameHtml += ' <span style="font-size:10px; background:#dc3545; color:#fff; padding:2px 4px; border-radius:3px; margin-left:4px; font-weight:600;">품절</span>';
+            }
+            var trStyle = p.isSoldOut ? 'opacity:0.6; background-color:#fbfbfb; cursor:pointer;' : 'cursor:pointer;';
+
+            html += '<tr class="product-row" data-id="' + escapeHtml(p.id) + '" style="' + trStyle + '">' +
                 '<td class="col-check"><input type="checkbox" class="sk-checkbox" value="' + escapeHtml(p.id) + '"></td>' +
                 '<td>' + escapeHtml(p.supplier) + '</td>' +
                 '<td>' + escapeHtml(p.brand) + '</td>' +
-                '<td><strong>' + escapeHtml(p.name) + '</strong></td>' +
+                '<td>' + nameHtml + '</td>' +
                 '<td>' + escapeHtml(p.color) + '</td>' +
                 '<td>' + escapeHtml(p.size) + '</td>' +
                 '<td>' + escapeHtml(p.uploadDate) + '</td>' +
@@ -187,7 +193,6 @@ function renderTable() {
                 '<td class="col-num profit-col ' + profitClass + '" style="font-weight:bold;">' + formatCurrency(profit) + '</td>' +
                 '<td class="col-num profit-col"><span class="badge ' + badgeClass + '">' + profitRate.toFixed(1) + '%</span></td>' +
                 '<td style="font-size:11px; color:#555; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:120px;" title="' + escapeHtml(p.remarks || '') + '">' + escapeHtml(p.remarks || '') + '</td>' +
-                '<td class="col-action"><button class="btn-icon edit-btn" data-id="' + escapeHtml(p.id) + '"><i class="bx bx-edit-alt"></i></button></td>' +
                 '</tr>';
         });
     }
@@ -204,9 +209,10 @@ function renderTable() {
     if (sellEl) sellEl.textContent = formatCurrency(totalSell);
     if (profitEl) profitEl.textContent = formatCurrency(totalProfit);
 
-    // 수정 버튼 이벤트 바인딩
-    document.querySelectorAll('.edit-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
+    // 행 클릭 시 수정 모달 띄우기 (체크박스 영역 제외)
+    document.querySelectorAll('.product-row').forEach(function(tr) {
+        tr.addEventListener('click', function(e) {
+            if (e.target.tagName === 'INPUT' || e.target.classList.contains('col-check') || e.target.closest('.col-check')) return;
             openModal(this.getAttribute('data-id'));
         });
     });
@@ -243,6 +249,9 @@ function openModal(id) {
             document.getElementById('skShippingQty').value = p.shippingQty || '1';
             document.getElementById('skSellPrice').value = p.sellPrice || '';
             document.getElementById('skSellShipping').value = p.sellShipping || '';
+            document.getElementById('skIsLowestPrice').checked = (p.isLowestPrice === 1);
+            if (document.getElementById('skIsSoldOut')) document.getElementById('skIsSoldOut').checked = (p.isSoldOut === 1);
+            if (document.getElementById('skRemarks')) document.getElementById('skRemarks').value = p.remarks || '';
             toggleShippingQty();
             updateCalcPreview();
         }
@@ -375,6 +384,7 @@ document.addEventListener('DOMContentLoaded', function() {
             sellPrice: parseInt(document.getElementById('skSellPrice').value, 10) || 0,
             sellShipping: parseInt(document.getElementById('skSellShipping').value, 10) || 0,
             isLowestPrice: document.getElementById('skIsLowestPrice').checked ? 1 : 0,
+            isSoldOut: (document.getElementById('skIsSoldOut') && document.getElementById('skIsSoldOut').checked) ? 1 : 0,
             remarks: document.getElementById('skRemarks') ? document.getElementById('skRemarks').value.trim() : ''
         };
 
