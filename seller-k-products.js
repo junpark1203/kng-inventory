@@ -15,7 +15,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
 // ==========================================
-// 유틸리티 함수
+// ?좏떥由ы떚 ?⑥닔
 // ==========================================
 var formatCurrency = function(n) {
     return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(n);
@@ -55,27 +55,27 @@ function updateConnectionStatus(online) {
     var statusEl = document.getElementById('firebaseStatus');
     if (!statusEl) return;
     if (online) {
-        statusEl.innerHTML = "<i class='bx bx-data'></i> NAS API 연결됨";
+        statusEl.innerHTML = "<i class='bx bx-data'></i> NAS API ?곌껐??;
         statusEl.style.color = 'var(--success)';
     } else {
-        statusEl.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> 연결 중...";
+        statusEl.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> ?곌껐 以?..";
         statusEl.style.color = 'var(--warning)';
     }
 }
 
 // ==========================================
-// API 설정
+// API ?ㅼ젙
 // ==========================================
 const API_BASE = 'https://kng.junparks.com/api/seller-k/products';
 
 // ==========================================
-// 앱 상태
+// ???곹깭
 // ==========================================
 var products = [];
 var editingId = null;
 
 // ==========================================
-// 데이터 로드
+// ?곗씠??濡쒕뱶
 // ==========================================
 function loadProducts() {
     updateConnectionStatus(false);
@@ -88,15 +88,15 @@ function loadProducts() {
         })
         .catch(function(err) {
             console.error('API Error:', err);
-            showToast('데이터를 불러오는데 실패했습니다.', 'error');
+            showToast('?곗씠?곕? 遺덈윭?ㅻ뒗???ㅽ뙣?덉뒿?덈떎.', 'error');
             updateConnectionStatus(false);
             document.getElementById('skTableBody').innerHTML =
-                '<tr><td colspan="17" style="text-align:center; padding:30px;">API 서버 연결 실패</td></tr>';
+                '<tr><td colspan="17" style="text-align:center; padding:30px;">API ?쒕쾭 ?곌껐 ?ㅽ뙣</td></tr>';
         });
 }
 
 // ==========================================
-// 계산 함수
+// 怨꾩궛 ?⑥닔
 // ==========================================
 function generateId() {
     return 'sk_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
@@ -111,8 +111,4 @@ function calcCommission(sellPrice, sellShipping) {
 
 function calcBuyTotal(buyPrice, buyShipping, shippingBasis, shippingQty) {
     if (!buyPrice) buyPrice = 0;
-    if (!buyShipping) buyShipping = 0;
-    var finalShipping = 0;
-    if (shippingBasis === '무료') {
-        finalShipping = 0;
-    } else if (shippingBasis 
+    if (!buyShipping) buyShip
