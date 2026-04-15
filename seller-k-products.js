@@ -102,6 +102,18 @@ function generateId() {
     return 'sk_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
 }
 
+function formatDateTime(isoString) {
+    if (!isoString) return '-';
+    var d = new Date(isoString);
+    if (isNaN(d.getTime())) return isoString;
+    var y = d.getFullYear();
+    var m = String(d.getMonth() + 1).padStart(2, '0');
+    var day = String(d.getDate()).padStart(2, '0');
+    var h = String(d.getHours()).padStart(2, '0');
+    var min = String(d.getMinutes()).padStart(2, '0');
+    return y + '-' + m + '-' + day + ' ' + h + ':' + min;
+}
+
 function calcCommission(sellPrice, sellShipping) {
     var baseExt = sellPrice + sellShipping;
     var orderFee = Math.round(baseExt * 0.0363);
@@ -182,6 +194,7 @@ function renderTable() {
                 '<td>' + escapeHtml(p.color) + '</td>' +
                 '<td>' + escapeHtml(p.size) + '</td>' +
                 '<td>' + escapeHtml(p.uploadDate) + '</td>' +
+                '<td>' + formatDateTime(p.updatedAt) + '</td>' +
                 '<td class="col-num buy-col">' + formatCurrency(p.buyPrice) + '</td>' +
                 '<td class="col-num buy-col">' + formatCurrency(p.buyShipping || 0) + '</td>' +
                 '<td class="buy-col" style="text-align:center; font-size:12px;">' + escapeHtml(shippingBasisLabel) + '</td>' +
@@ -252,9 +265,14 @@ function openModal(id) {
             document.getElementById('skIsLowestPrice').checked = (p.isLowestPrice === 1);
             if (document.getElementById('skIsSoldOut')) document.getElementById('skIsSoldOut').checked = (p.isSoldOut === 1);
             if (document.getElementById('skRemarks')) document.getElementById('skRemarks').value = p.remarks || '';
+            if (document.getElementById('skTimestampDisplay')) {
+                document.getElementById('skTimestampDisplay').innerHTML = '최초등록: ' + formatDateTime(p.createdAt) + ' &nbsp;|&nbsp; 최종수정: ' + formatDateTime(p.updatedAt);
+            }
             toggleShippingQty();
             updateCalcPreview();
         }
+    } else {
+        if (document.getElementById('skTimestampDisplay')) document.getElementById('skTimestampDisplay').innerHTML = '';
     }
 
     modal.classList.add('active');
