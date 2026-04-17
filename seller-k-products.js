@@ -76,6 +76,8 @@ var filteredProducts = [];
 var editingId = null;
 var currentPage = 1;
 var pageSize = 50;
+var sortField = null;
+var sortDirection = 'asc';
 
 // ==========================================
 // 데이터 로드
@@ -123,7 +125,74 @@ function applyFilterAndRender() {
         });
     }
 
+    // 정렬 적용
+    if (sortField) {
+        filteredProducts.sort(function(a, b) {
+            var valA = getSortValue(a, sortField);
+            var valB = getSortValue(b, sortField);
+
+            // 숫자 비교
+            if (typeof valA === 'number' && typeof valB === 'number') {
+                return sortDirection === 'asc' ? valA - valB : valB - valA;
+            }
+
+            // 문자열 비교
+            var strA = String(valA || '').toLowerCase();
+            var strB = String(valB || '').toLowerCase();
+            if (strA < strB) return sortDirection === 'asc' ? -1 : 1;
+            if (strA > strB) return sortDirection === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }
+
     renderTable();
+}
+
+// 정렬용 값 가져오기 (계산 필드 포함)
+function getSortValue(p, field) {
+    switch (field) {
+        case 'buyTotal':
+            return calcBuyTotal(p.buyPrice, p.buyShipping, p.shippingBasis, p.shippingQty);
+        case 'sellTotal':
+            return calcSellTotal(p.sellPrice, p.sellShipping);
+        case 'commission':
+            return calcCommission(p.sellPrice || 0, p.sellShipping || 0);
+        case 'profit': {
+            var bt = calcBuyTotal(p.buyPrice, p.buyShipping, p.shippingBasis, p.shippingQty);
+            var st = calcSellTotal(p.sellPrice, p.sellShipping);
+            var cm = calcCommission(p.sellPrice || 0, p.sellShipping || 0);
+            return calcProfit(bt, st, cm);
+        }
+        case 'profitRate': {
+            var bt2 = calcBuyTotal(p.buyPrice, p.buyShipping, p.shippingBasis, p.shippingQty);
+            var st2 = calcSellTotal(p.sellPrice, p.sellShipping);
+            var cm2 = calcCommission(p.sellPrice || 0, p.sellShipping || 0);
+            var pf = calcProfit(bt2, st2, cm2);
+            return calcProfitRate(pf, st2);
+        }
+        case 'buyPrice': return p.buyPrice || 0;
+        case 'buyShipping': return p.buyShipping || 0;
+        case 'sellPrice': return p.sellPrice || 0;
+        case 'sellShipping': return p.sellShipping || 0;
+        default:
+            return p[field] || '';
+    }
+}
+
+// 정렬 아이콘 업데이트
+function updateSortIcons() {
+    document.querySelectorAll('.sortable').forEach(function(th) {
+        var icon = th.querySelector('i');
+        if (!icon) return;
+        var field = th.getAttribute('data-sort');
+        if (field === sortField) {
+            icon.className = sortDirection === 'asc' ? 'bx bx-sort-up' : 'bx bx-sort-down';
+            th.classList.add('sort-active');
+        } else {
+            icon.className = 'bx bx-sort';
+            th.classList.remove('sort-active');
+        }
+    });
 }
 
 // ==========================================
@@ -675,6 +744,24 @@ document.addEventListener('DOMContentLoaded', function() {
         var checked = this.checked;
         document.querySelectorAll('.sk-checkbox').forEach(function(cb) {
             cb.checked = checked;
+        });
+    });
+
+    // 정렬 헤더 클릭 이벤트
+    document.querySelectorAll('.sortable').forEach(function(th) {
+        th.style.cursor = 'pointer';
+        th.addEventListener('click', function() {
+            var field = this.getAttribute('data-sort');
+            if (!field) return;
+            if (sortField === field) {
+                sortDirection = (sortDirection === 'asc') ? 'desc' : 'asc';
+            } else {
+                sortField = field;
+                sortDirection = 'asc';
+            }
+            currentPage = 1;
+            applyFilterAndRender();
+            updateSortIcons();
         });
     });
 
