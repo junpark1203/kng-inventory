@@ -72,17 +72,14 @@
     font-weight: 700;
 }
 
-/* ── KPI Cards — Seller K ── */
-.kpi-strip-sk {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
+/* ── Product Count Text ── */
+.product-count-text {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--gray-400);
+    margin-left: 6px;
+    letter-spacing: -0.2px;
 }
-
-.kpi-icon.kpi-items { background: var(--primary-muted); color: var(--primary); }
-.kpi-icon.kpi-purchase { background: rgba(79, 110, 247, 0.10); color: #4f6ef7; }
-.kpi-icon.kpi-sales-total { background: var(--success-muted); color: var(--success); }
-.kpi-icon.kpi-profit { background: var(--warning-muted); color: var(--warning); }
 
 /* ── Add Button ── */
 .btn-add-product {
@@ -423,11 +420,6 @@
 
 /* ── Responsive ── */
 @media (max-width: 768px) {
-    .kpi-strip-sk {
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
-    }
-
     .modal-form-grid {
         grid-template-columns: 1fr;
     }
