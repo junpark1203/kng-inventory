@@ -72,7 +72,10 @@ const API_BASE = 'https://kng.junparks.com/api/seller-k/products';
 // 앱 상태
 // ==========================================
 var products = [];
+var filteredProducts = [];
 var editingId = null;
+var currentPage = 1;
+var pageSize = 50;
 
 // ==========================================
 // 데이터 로드
@@ -83,7 +86,7 @@ function loadProducts() {
         .then(function(res) { return res.json(); })
         .then(function(data) {
             products = data || [];
-            renderTable();
+            applyFilterAndRender();
             updateConnectionStatus(true);
         })
         .catch(function(err) {
@@ -93,6 +96,34 @@ function loadProducts() {
             document.getElementById('skTableBody').innerHTML =
                 '<tr><td colspan="17" style="text-align:center; padding:30px;">API 서버 연결 실패</td></tr>';
         });
+}
+
+// ==========================================
+// 검색 필터링
+// ==========================================
+function applyFilterAndRender() {
+    var searchField = document.getElementById('skSearchField');
+    var searchInput = document.getElementById('skSearchInput');
+    var field = searchField ? searchField.value : 'all';
+    var keyword = searchInput ? searchInput.value.trim().toLowerCase() : '';
+
+    if (!keyword) {
+        filteredProducts = products.slice();
+    } else {
+        filteredProducts = products.filter(function(p) {
+            if (field === 'all') {
+                return (p.supplier || '').toLowerCase().indexOf(keyword) !== -1 ||
+                       (p.brand || '').toLowerCase().indexOf(keyword) !== -1 ||
+                       (p.name || '').toLowerCase().indexOf(keyword) !== -1 ||
+                       (p.color || '').toLowerCase().indexOf(keyword) !== -1 ||
+                       (p.size || '').toLowerCase().indexOf(keyword) !== -1 ||
+                       (p.remarks || '').toLowerCase().indexOf(keyword) !== -1;
+            }
+            return (p[field] || '').toLowerCase().indexOf(keyword) !== -1;
+        });
+    }
+
+    renderTable();
 }
 
 // ==========================================
@@ -151,23 +182,54 @@ function renderTable() {
     var tbody = document.getElementById('skTableBody');
     if (!tbody) return;
 
+    // KPI는 전체 데이터 기준으로 계산
     var totalBuy = 0;
     var totalSell = 0;
     var totalProfit = 0;
+
+    products.forEach(function(p) {
+        var bt = calcBuyTotal(p.buyPrice, p.buyShipping, p.shippingBasis, p.shippingQty);
+        var st = calcSellTotal(p.sellPrice, p.sellShipping);
+        var cm = calcCommission(p.sellPrice || 0, p.sellShipping || 0);
+        var pf = calcProfit(bt, st, cm);
+        totalBuy += bt;
+        totalSell += st;
+        totalProfit += pf;
+    });
+
+    var countEl = document.getElementById('skTotalCount');
+    var buyEl = document.getElementById('skTotalBuy');
+    var sellEl = document.getElementById('skTotalSell');
+    var profitEl = document.getElementById('skTotalProfit');
+    if (countEl) countEl.textContent = products.length;
+    if (buyEl) buyEl.textContent = formatCurrency(totalBuy);
+    if (sellEl) sellEl.textContent = formatCurrency(totalSell);
+    if (profitEl) profitEl.textContent = formatCurrency(totalProfit);
+
+    // 페이지네이션 계산
+    var totalFiltered = filteredProducts.length;
+    var effectivePageSize = (pageSize === 0) ? totalFiltered : pageSize; // 0 = 전체
+    var totalPages = effectivePageSize > 0 ? Math.max(1, Math.ceil(totalFiltered / effectivePageSize)) : 1;
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+
+    var startIdx = (currentPage - 1) * effectivePageSize;
+    var endIdx = (pageSize === 0) ? totalFiltered : Math.min(startIdx + effectivePageSize, totalFiltered);
+    var pageProducts = filteredProducts.slice(startIdx, endIdx);
+
+    // 테이블 렌더링
     var html = '';
 
-    if (products.length === 0) {
-        html = '<tr><td colspan="17" style="text-align:center; padding:30px; color:var(--gray-500);">등록된 매입상품이 없습니다.</td></tr>';
+    if (filteredProducts.length === 0) {
+        var emptyMsg = products.length === 0 ? '등록된 매입상품이 없습니다.' : '검색 결과가 없습니다.';
+        html = '<tr><td colspan="17" style="text-align:center; padding:30px; color:var(--gray-500);">' + emptyMsg + '</td></tr>';
     } else {
-        products.forEach(function(p) {
+        pageProducts.forEach(function(p) {
             var buyTotal = calcBuyTotal(p.buyPrice, p.buyShipping, p.shippingBasis, p.shippingQty);
             var sellTotal = calcSellTotal(p.sellPrice, p.sellShipping);
             var commission = calcCommission(p.sellPrice || 0, p.sellShipping || 0);
             var profit = calcProfit(buyTotal, sellTotal, commission);
             var profitRate = calcProfitRate(profit, sellTotal);
-            totalBuy += buyTotal;
-            totalSell += sellTotal;
-            totalProfit += profit;
 
             var shippingBasisLabel = p.shippingBasis || '';
             if (p.shippingBasis === '수량별') shippingBasisLabel += ' (' + (p.shippingQty || 1) + '개당)';
@@ -212,16 +274,6 @@ function renderTable() {
 
     tbody.innerHTML = html;
 
-    // KPI 업데이트
-    var countEl = document.getElementById('skTotalCount');
-    var buyEl = document.getElementById('skTotalBuy');
-    var sellEl = document.getElementById('skTotalSell');
-    var profitEl = document.getElementById('skTotalProfit');
-    if (countEl) countEl.textContent = products.length;
-    if (buyEl) buyEl.textContent = formatCurrency(totalBuy);
-    if (sellEl) sellEl.textContent = formatCurrency(totalSell);
-    if (profitEl) profitEl.textContent = formatCurrency(totalProfit);
-
     // 행 클릭 시 수정 모달 띄우기 (체크박스 영역 제외)
     document.querySelectorAll('.product-row').forEach(function(tr) {
         tr.addEventListener('click', function(e) {
@@ -229,6 +281,136 @@ function renderTable() {
             openModal(this.getAttribute('data-id'));
         });
     });
+
+    // 페이지네이션 렌더링
+    renderPagination(totalFiltered, totalPages, startIdx, endIdx);
+}
+
+// ==========================================
+// 페이지네이션 렌더링
+// ==========================================
+function renderPagination(totalFiltered, totalPages, startIdx, endIdx) {
+    var container = document.getElementById('skPagination');
+    if (!container) return;
+
+    if (totalFiltered === 0) {
+        container.innerHTML = '';
+        return;
+    }
+
+    var html = '<div class="pagination-bar">';
+
+    // 왼쪽: 페이지당 표시 개수 드롭다운 + 정보
+    html += '<div class="pagination-info">';
+    html += '<div class="page-size-wrap">';
+    html += '<label for="pageSizeSelect">페이지당</label>';
+    html += '<select id="pageSizeSelect" class="page-size-select">';
+    var sizes = [
+        { value: 50, label: '50개' },
+        { value: 100, label: '100개' },
+        { value: 150, label: '150개' },
+        { value: 200, label: '200개' },
+        { value: 0, label: '전체' }
+    ];
+    sizes.forEach(function(s) {
+        var selected = (s.value === pageSize) ? ' selected' : '';
+        html += '<option value="' + s.value + '"' + selected + '>' + s.label + '</option>';
+    });
+    html += '</select>';
+    html += '</div>';
+    html += '<span class="pagination-summary">총 <strong>' + totalFiltered + '</strong>건';
+    if (totalFiltered !== products.length) {
+        html += ' <span class="filtered-note">(검색결과, 전체 ' + products.length + '건)</span>';
+    }
+    if (pageSize !== 0 && totalFiltered > 0) {
+        html += '  |  <strong>' + (startIdx + 1) + '</strong> – <strong>' + endIdx + '</strong>번째';
+    }
+    html += '</span>';
+    html += '</div>';
+
+    // 오른쪽: 페이지 버튼
+    if (totalPages > 1) {
+        html += '<div class="pagination-controls">';
+
+        // 처음 / 이전
+        html += '<button class="page-btn" data-page="1"' + (currentPage === 1 ? ' disabled' : '') + ' title="처음"><i class="bx bx-chevrons-left"></i></button>';
+        html += '<button class="page-btn" data-page="' + (currentPage - 1) + '"' + (currentPage === 1 ? ' disabled' : '') + ' title="이전"><i class="bx bx-chevron-left"></i></button>';
+
+        // 페이지 번호들
+        var pages = getPageNumbers(currentPage, totalPages);
+        pages.forEach(function(pg) {
+            if (pg === '...') {
+                html += '<span class="page-ellipsis">…</span>';
+            } else {
+                var activeClass = (pg === currentPage) ? ' active' : '';
+                html += '<button class="page-btn page-num' + activeClass + '" data-page="' + pg + '">' + pg + '</button>';
+            }
+        });
+
+        // 다음 / 끝
+        html += '<button class="page-btn" data-page="' + (currentPage + 1) + '"' + (currentPage === totalPages ? ' disabled' : '') + ' title="다음"><i class="bx bx-chevron-right"></i></button>';
+        html += '<button class="page-btn" data-page="' + totalPages + '"' + (currentPage === totalPages ? ' disabled' : '') + ' title="끝"><i class="bx bx-chevrons-right"></i></button>';
+
+        html += '</div>';
+    }
+
+    html += '</div>';
+    container.innerHTML = html;
+
+    // 이벤트 바인딩: 페이지 크기 변경
+    var sizeSelect = document.getElementById('pageSizeSelect');
+    if (sizeSelect) {
+        sizeSelect.addEventListener('change', function() {
+            pageSize = parseInt(this.value, 10);
+            currentPage = 1;
+            renderTable();
+        });
+    }
+
+    // 이벤트 바인딩: 페이지 버튼 클릭
+    container.querySelectorAll('.page-btn[data-page]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            if (this.disabled) return;
+            var pg = parseInt(this.getAttribute('data-page'), 10);
+            if (pg >= 1 && pg <= totalPages) {
+                currentPage = pg;
+                renderTable();
+                // 테이블 상단으로 스크롤
+                var tableEl = document.getElementById('skTable');
+                if (tableEl) tableEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    });
+}
+
+// 페이지 번호 배열 생성 (현재 페이지 중심 ±2, 처음/끝 포함)
+function getPageNumbers(current, total) {
+    if (total <= 7) {
+        var arr = [];
+        for (var i = 1; i <= total; i++) arr.push(i);
+        return arr;
+    }
+
+    var pages = [];
+    pages.push(1);
+
+    if (current > 4) {
+        pages.push('...');
+    }
+
+    var start = Math.max(2, current - 2);
+    var end = Math.min(total - 1, current + 2);
+
+    for (var j = start; j <= end; j++) {
+        pages.push(j);
+    }
+
+    if (current < total - 3) {
+        pages.push('...');
+    }
+
+    pages.push(total);
+    return pages;
 }
 
 // ==========================================
@@ -488,14 +670,33 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // 전체 선택
+    // 전체 선택 (현재 페이지만)
     document.getElementById('selectAllSk').addEventListener('change', function() {
         var checked = this.checked;
-
-document.querySelectorAll('.sk-checkbox').forEach(function(cb) {
+        document.querySelectorAll('.sk-checkbox').forEach(function(cb) {
             cb.checked = checked;
         });
     });
+
+    // 검색 필터링 이벤트
+    var searchInputEl = document.getElementById('skSearchInput');
+    var searchFieldEl = document.getElementById('skSearchField');
+    var searchTimer = null;
+    if (searchInputEl) {
+        searchInputEl.addEventListener('input', function() {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(function() {
+                currentPage = 1;
+                applyFilterAndRender();
+            }, 300);
+        });
+    }
+    if (searchFieldEl) {
+        searchFieldEl.addEventListener('change', function() {
+            currentPage = 1;
+            applyFilterAndRender();
+        });
+    }
 
     // 셀러K 아코디언 토글
     var t = document.getElementById('sellerKToggle');
@@ -640,3 +841,53 @@ document.querySelectorAll('.sk-checkbox').forEach(function(cb) {
     toggleShippingQty();
 });
 
+// 엑셀 내보내기
+document.getElementById('exportSkBtn').addEventListener('click', function() {
+    if (typeof XLSX === 'undefined') {
+        showToast('엑셀 라이브러리가 로드되지 않았습니다.', 'error');
+        return;
+    }
+    if (products.length === 0) {
+        showToast('내보낼 데이터가 없습니다.', 'warning');
+        return;
+    }
+
+    var wsData = [
+        ["업로드일", "매입처", "브랜드", "상품명", "컬러", "사이즈", "매입가", "매입운임", "운임기준", "매입합계", "판매가", "판매운임", "매출합계", "수수료", "정산이익", "수익률", "비고", "최종수정일"]
+    ];
+
+    products.forEach(function(p) {
+        var buyTotal = calcBuyTotal(p.buyPrice, p.buyShipping, p.shippingBasis, p.shippingQty);
+        var sellTotal = calcSellTotal(p.sellPrice, p.sellShipping);
+        var commission = calcCommission(p.sellPrice || 0, p.sellShipping || 0);
+        var profit = calcProfit(buyTotal, sellTotal, commission);
+        var profitRate = calcProfitRate(profit, sellTotal);
+
+        wsData.push([
+            p.uploadDate || '',
+            p.supplier || '',
+            p.brand || '',
+            p.name || '',
+            p.color || '',
+            p.size || '',
+            p.buyPrice || 0,
+            p.buyShipping || 0,
+            p.shippingBasis || '',
+            buyTotal,
+            p.sellPrice || 0,
+            p.sellShipping || 0,
+            sellTotal,
+            commission,
+            profit,
+            profitRate.toFixed(1) + '%',
+            p.remarks || '',
+            formatDateTime(p.updatedAt)
+        ]);
+    });
+
+    var wb = XLSX.utils.book_new();
+    var ws = XLSX.utils.aoa_to_sheet(wsData);
+    XLSX.utils.book_append_sheet(wb, ws, "매입상품리스트");
+    XLSX.writeFile(wb, "매입상품_리스트_" + new Date().toISOString().split('T')[0] + ".xlsx");
+    showToast('엑셀 파일로 내보냈습니다.', 'success');
+});
