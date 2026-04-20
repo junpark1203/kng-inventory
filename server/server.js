@@ -6,6 +6,10 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
 
+// Mass Upload 모듈
+const massUploadRoutes = require('./routes/mass-upload');
+const { initMassUploadTables } = require('./db-mass-upload');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -19,9 +23,16 @@ app.use(helmet({
 const allowedOrigins = [
     'https://kng-inventory.pages.dev',
     /\.kng-inventory\.pages\.dev$/,   // preview 배포 (*.kng-inventory.pages.dev)
+    // Mass Upload 프론트엔드
+    'https://seller-k-mass-upload.pages.dev',
+    /\.seller-k-mass-upload\.pages\.dev$/,  // preview 배포
+    /kng-mass-upload\.pages\.dev$/,
+    /\.kng-mass-upload\.pages\.dev$/,
     'http://localhost:8788',            // 로컬 개발용
     'http://localhost:3000',
-    'http://127.0.0.1:8788'
+    'http://localhost:8090',            // mass_upload dev-server
+    'http://127.0.0.1:8788',
+    'http://127.0.0.1:8090'
 ];
 app.use(cors({
     origin: function(origin, callback) {
@@ -38,7 +49,7 @@ app.use(cors({
 }));
 
 // JSON 바디 파싱
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 // API 접속 횟수 제한 (IP당 15분에 100회)
 const apiLimiter = rateLimit({
@@ -63,6 +74,11 @@ const db = new sqlite3.Database(dbFile, (err) => {
     } else {
         console.log('SQLite 데이터베이스 연결 완료:', dbFile);
         initDb();
+        // Mass Upload 테이블 초기화 + 라우트에 DB 주입
+        initMassUploadTables(db).then(() => {
+            massUploadRoutes.setDb(db);
+            console.log('mass_upload API 준비 완료');
+        });
     }
 });
 
@@ -164,6 +180,11 @@ app.post('/api/seller-k/products/delete', (req, res) => {
         res.json({ message: '삭제 성공', deletedCount: this.changes });
     });
 });
+
+// ==========================================
+// Mass Upload API 라우트 마운트
+// ==========================================
+app.use('/api/mass-upload', massUploadRoutes);
 
 // ==========================================
 // API 상태 확인 엔드포인트
